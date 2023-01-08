@@ -1,0 +1,27 @@
+name: rubocop
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Ruby ${{ matrix.ruby }}
+    strategy:
+      matrix:
+        ruby:
+          - '3.1.0'
+          - '2.7.0'
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: false
+
+    - name: Install dependencies
+      run: bundle install
+
+    - name: Run the rubocop
+      run: bundle exec rubocop --config .rubocop.yml --parallel
