@@ -34,6 +34,10 @@ Gem::Specification.new do |spec|
 
   # Uncomment to register a new dependency of your gem
   spec.add_dependency 'devise', '>= 4.7.2'
+  spec.add_dependency 'dry-configurable', '~> 1.0', '>= 1.0.1'
+  spec.add_dependency 'dry-initializer', '>= 3.1.1'
+  spec.add_dependency 'dry-monads', '>= 1.6.0'
+  spec.add_dependency 'dry-types', '>= 1.7.0'
   spec.add_dependency 'rails', '>= 6.0.0'
 
   # For more information and examples about making a new gem, check out our

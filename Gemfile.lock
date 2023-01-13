@@ -3,6 +3,10 @@ PATH
   specs:
     devise-api (0.0.0)
       devise (>= 4.7.2)
+      dry-configurable (~> 1.0, >= 1.0.1)
+      dry-initializer (>= 3.1.1)
+      dry-monads (>= 1.6.0)
+      dry-types (>= 1.7.0)
       rails (>= 6.0.0)
 
 GEM
@@ -87,6 +91,28 @@ GEM
       railties (>= 4.1.0)
       responders
       warden (~> 1.2.3)
+    dry-configurable (1.0.1)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-core (1.0.0)
+      concurrent-ruby (~> 1.0)
+      zeitwerk (~> 2.6)
+    dry-inflector (1.0.0)
+    dry-initializer (3.1.1)
+    dry-logic (1.5.0)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-monads (1.6.0)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 1.0, < 2)
+      zeitwerk (~> 2.6)
+    dry-types (1.7.0)
+      concurrent-ruby (~> 1.0)
+      dry-core (~> 1.0, < 2)
+      dry-inflector (~> 1.0, < 2)
+      dry-logic (>= 1.4, < 2)
+      zeitwerk (~> 2.6)
     erubi (1.12.0)
     globalid (1.0.0)
       activesupport (>= 5.0)
@@ -123,7 +149,7 @@ GEM
     parallel (1.22.1)
     parser (3.2.0.0)
       ast (~> 2.4.1)
-    pry (0.14.1)
+    pry (0.14.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
     racc (1.6.2)
@@ -189,6 +215,7 @@ GEM
     zeitwerk (2.6.6)
 
 PLATFORMS
+  arm64-darwin-21
   arm64-darwin-22
 
 DEPENDENCIES
