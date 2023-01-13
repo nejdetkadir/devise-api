@@ -5,19 +5,23 @@ require 'active_support/concern'
 require_relative 'api/configuration'
 require_relative 'api/version'
 require_relative 'api/controllers/helpers'
+require_relative 'api/responses/error_response'
+require_relative 'api/responses/token_response'
 
 # rubocop:disable Style/ClassVars
 module Devise
   mattr_accessor :api
-  @@api = Devise::Api::Configuration
+  @@api = Devise::Api::Configuration.new
 
   module Models
     module Api
       extend ActiveSupport::Concern
 
       included do
-        has_many :access_tokens, class_name: Devise.api.config.base_token_model, dependent: :destroy,
-                                 as: :resource_owner
+        has_many :access_tokens,
+                 class_name: Devise.api.config.base_token_model,
+                 dependent: :destroy,
+                 as: :resource_owner
       end
 
       class_methods do
@@ -28,8 +32,7 @@ module Devise
     end
   end
 
-  module Api
-  end
+  module Api; end
 
   add_module :api,
              strategy: :api,

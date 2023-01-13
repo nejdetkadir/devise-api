@@ -41,7 +41,7 @@ module Devise
             error: error,
             error_description: error_description,
             lockable: devise_lockable_info,
-            confirmation: devise_confirmable_info
+            confirmable: devise_confirmable_info
           }.compact
         end
 
@@ -101,7 +101,11 @@ module Devise
         end
 
         def unauthorized_status?
-          invalid_token_error? || expired_token_error? || expired_refresh_token_error? || revoked_token_error?
+          invalid_token_error? ||
+            expired_token_error? ||
+            expired_refresh_token_error? ||
+            revoked_token_error? ||
+            invalid_authentication_error?
         end
 
         def bad_request_status?

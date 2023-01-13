@@ -91,6 +91,7 @@ GEM
       railties (>= 4.1.0)
       responders
       warden (~> 1.2.3)
+    diff-lcs (1.5.0)
     dry-configurable (1.0.1)
       dry-core (~> 1.0, < 2)
       zeitwerk (~> 2.6)
@@ -189,6 +190,19 @@ GEM
       actionpack (>= 5.0)
       railties (>= 5.0)
     rexml (3.2.5)
+    rspec (3.12.0)
+      rspec-core (~> 3.12.0)
+      rspec-expectations (~> 3.12.0)
+      rspec-mocks (~> 3.12.0)
+    rspec-core (3.12.0)
+      rspec-support (~> 3.12.0)
+    rspec-expectations (3.12.2)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.12.0)
+    rspec-mocks (3.12.2)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.12.0)
+    rspec-support (3.12.0)
     rubocop (1.42.0)
       json (~> 2.3)
       parallel (~> 1.10)
@@ -221,9 +235,9 @@ PLATFORMS
 DEPENDENCIES
   awesome_print
   devise-api!
-  minitest (~> 5.0)
   pry (~> 0.14.1)
   rake (~> 13.0)
+  rspec (~> 3.0)
   rubocop (~> 1.21)
 
 BUNDLED WITH

@@ -8,8 +8,8 @@ gemspec
 # Rake is a Make-like program implemented in Ruby [https://github.com/ruby/rake]
 gem 'rake', '~> 13.0'
 
-# Minitest provides a complete suite of testing facilities supporting [https://github.com/minitest/minitest]
-gem 'minitest', '~> 5.0'
+# Behaviour Driven Development for Ruby [https://github.com/rspec/rspec-metagem]
+gem 'rspec', '~> 3.0'
 
 # RuboCop is a Ruby code style checking and code formatting tool [https://github.com/rubocop/rubocop]
 gem 'rubocop', '~> 1.21'

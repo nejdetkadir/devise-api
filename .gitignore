@@ -8,3 +8,5 @@
 /tmp/
 
 .idea/
+
+.rspec_status

@@ -1,14 +1,8 @@
 # frozen_string_literal: true
 
-require 'devise/api/responses/error_response'
-require 'devise/api/responses/token_response'
-require 'devise/api/controllers/helpers'
-
 module Devise
   module Api
     class TokensController < Devise.api.config.base_controller.constantize
-      include Devise::Api::Controllers::Helpers
-
       skip_before_action :verify_authenticity_token, raise: false
       before_action :authenticate_devise_api_token!, only: %i[info revoke refresh]
 

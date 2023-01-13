@@ -5,7 +5,7 @@ require 'dry-configurable'
 module Devise
   module Api
     class Configuration
-      extend Dry::Configurable
+      include Dry::Configurable
 
       setting :access_token, reader: true do
         setting :expires_in, default: 1.hour, reader: true
