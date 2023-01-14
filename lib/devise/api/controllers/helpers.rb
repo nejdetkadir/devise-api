@@ -64,7 +64,7 @@ module Devise
 
         def extract_devise_api_token_from_headers
           token = request.headers[Devise.api.config.authorization.key]
-          token.gsub!(/^#{Devise.api.config.authorization.scheme} /, '') unless token.blank?
+          token.gsub!(/^#{Devise.api.config.authorization.scheme.dup} /, '') unless token.blank?
           token
         end
 
