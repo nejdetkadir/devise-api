@@ -1,0 +1,22 @@
+en:
+  devise:
+    api:
+      error_response:
+        invalid_authentication: "Email or password is invalid"
+        invalid_token: "Invalid token"
+        expired_token: "Token has expired"
+        expired_refresh_token: "Refresh token has expired"
+        revoked_token: "Token has been revoked"
+        refresh_token_disabled: "Refresh token is disabled for this application"
+        invalid_refresh_token: "Refresh token is invalid"
+        invalid_email: "Email is invalid"
+        invalid_resource_owner: "Resource owner is invalid"
+        resource_owner_create_error: "Resource owner could not be created"
+        devise_api_token_create_error: "Token could not be created"
+        devise_api_token_revoke_error: "Token could not be revoked"
+        lockable:
+          locked: "Your account is locked"
+        confirmable:
+          unconfirmed: "You have to confirm your account before continuing"
+        registerable:
+          signed_up_but_unconfirmed: "A message with a confirmation link has been sent to your email address. Please follow the link to activate your account"
