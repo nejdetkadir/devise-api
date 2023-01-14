@@ -7,6 +7,7 @@ require_relative 'api/version'
 require_relative 'api/controllers/helpers'
 require_relative 'api/responses/error_response'
 require_relative 'api/responses/token_response'
+require_relative 'api/generators/install_generator'
 
 # rubocop:disable Style/ClassVars
 module Devise

@@ -24,7 +24,7 @@ module Devise
           @request = request
           @token = token
           @action = action
-          @resource_owner = token.resource_owner
+          @resource_owner = token&.resource_owner
         end
 
         def body
@@ -62,7 +62,7 @@ module Devise
         def signed_up_body
           return default_body unless resource_owner.class.supported_devise_modules.confirmable?
 
-          message = resource_owner.confirmed? ? nil : ::I18n.t('devise.api.registerable.signed_up_but_unconfirmed')
+          message = resource_owner.confirmed? ? nil : I18n.t('devise.api.registerable.signed_up_but_unconfirmed')
 
           default_body.merge(confirmable: { confirmed: resource_owner.confirmed?, message: message }.compact)
         end

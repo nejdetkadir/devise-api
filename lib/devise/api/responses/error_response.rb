@@ -56,14 +56,14 @@ module Devise
 
         # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         def error_description
-          return [::I18n.t("devise.api.error_responses.#{error}")] if record.blank?
+          return [I18n.t("devise.api.error_response.#{error}")] if record.blank?
           if invalid_authentication_error? && devise_lockable_info.present? && record.access_locked?
-            return [::I18n.t('devise.api.error_responses.lockable.locked')]
+            return [I18n.t('devise.api.error_response.lockable.locked')]
           end
           if invalid_authentication_error? && devise_confirmable_info.present? && !record.confirmed?
-            return [::I18n.t('devise.api.error_responses.confirmable.unconfirmed')]
+            return [I18n.t('devise.api.error_response.confirmable.unconfirmed')]
           end
-          return [::I18n.t('devise.api.error_responses.invalid_authentication')] if invalid_authentication_error?
+          return [I18n.t('devise.api.error_response.invalid_authentication')] if invalid_authentication_error?
 
           record.errors.full_messages
         end

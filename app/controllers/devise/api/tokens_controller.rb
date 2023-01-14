@@ -4,7 +4,7 @@ module Devise
   module Api
     class TokensController < Devise.api.config.base_controller.constantize
       skip_before_action :verify_authenticity_token, raise: false
-      before_action :authenticate_devise_api_token!, only: %i[info revoke refresh]
+      before_action :authenticate_devise_api_token!, only: %i[info refresh]
 
       respond_to :json
 
@@ -80,7 +80,7 @@ module Devise
           token_response = Devise::Api::Responses::TokenResponse.new(request, token: service.success,
                                                                               action: __method__)
 
-          Devise.api.config.after_successful_revoke.call(service.success.resource_owner, service.success, request)
+          Devise.api.config.after_successful_revoke.call(service.success&.resource_owner, service.success, request)
 
           return render json: token_response.body, status: token_response.status
         end

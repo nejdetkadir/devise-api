@@ -47,14 +47,14 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t).with('devise.api.error_responses.invalid_token').and_return('Invalid token')
+      allow(I18n).to receive(:t).with('devise.api.error_response.invalid_token').and_return('Invalid token')
 
       expect(error_response.body).to eq(
         error: :invalid_token,
         error_description: ['Invalid token']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.invalid_token')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_token')
     end
   end
 
@@ -66,14 +66,14 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t).with('devise.api.error_responses.expired_token').and_return('Expired token')
+      allow(I18n).to receive(:t).with('devise.api.error_response.expired_token').and_return('Expired token')
 
       expect(error_response.body).to eq(
         error: :expired_token,
         error_description: ['Expired token']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.expired_token')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.expired_token')
     end
   end
 
@@ -85,8 +85,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.expired_refresh_token')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.expired_refresh_token')
         .and_return('Expired refresh token')
 
       expect(error_response.body).to eq(
@@ -94,7 +94,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         error_description: ['Expired refresh token']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.expired_refresh_token')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.expired_refresh_token')
     end
   end
 
@@ -106,14 +106,14 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t).with('devise.api.error_responses.revoked_token').and_return('Revoked token')
+      allow(I18n).to receive(:t).with('devise.api.error_response.revoked_token').and_return('Revoked token')
 
       expect(error_response.body).to eq(
         error: :revoked_token,
         error_description: ['Revoked token']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.revoked_token')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.revoked_token')
     end
   end
 
@@ -125,8 +125,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.refresh_token_disabled')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.refresh_token_disabled')
         .and_return('Refresh token disabled')
 
       expect(error_response.body).to eq(
@@ -134,7 +134,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         error_description: ['Refresh token disabled']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.refresh_token_disabled')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.refresh_token_disabled')
     end
   end
 
@@ -146,8 +146,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.invalid_refresh_token')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.invalid_refresh_token')
         .and_return('Invalid refresh token')
 
       expect(error_response.body).to eq(
@@ -155,7 +155,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         error_description: ['Invalid refresh token']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.invalid_refresh_token')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_refresh_token')
     end
   end
 
@@ -167,8 +167,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.invalid_email')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.invalid_email')
         .and_return('Invalid email')
 
       expect(error_response.body).to eq(
@@ -176,7 +176,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         error_description: ['Invalid email']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.invalid_email')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_email')
     end
   end
 
@@ -188,8 +188,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
 
     it 'has a body with an error and error description' do
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.invalid_resource_owner')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.invalid_resource_owner')
         .and_return('Invalid resource owner')
 
       expect(error_response.body).to eq(
@@ -197,7 +197,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         error_description: ['Invalid resource owner']
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.invalid_resource_owner')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_resource_owner')
     end
   end
 
@@ -267,8 +267,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
       end
 
       it 'has a body with an error and error description' do
-        allow(::I18n).to receive(:t)
-          .with('devise.api.error_responses.invalid_authentication')
+        allow(I18n).to receive(:t)
+          .with('devise.api.error_response.invalid_authentication')
           .and_return('Invalid authentication')
 
         expect(error_response.body).to eq(
@@ -276,7 +276,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
           error_description: ['Invalid authentication']
         )
 
-        expect(::I18n).to have_received(:t).with('devise.api.error_responses.invalid_authentication')
+        expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_authentication')
       end
     end
   end
@@ -293,8 +293,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
       allow(resource_class.supported_devise_modules).to receive(:confirmable?).and_return(false)
       allow(record).to receive(:confirmed?).and_return(false)
       allow(record).to receive(:access_locked?).and_return(false)
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.invalid_authentication')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.invalid_authentication')
         .and_return('Invalid authentication')
 
       expect(error_response.body).to eq(
@@ -307,7 +307,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         }
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.invalid_authentication')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_authentication')
     end
   end
 
@@ -323,8 +323,8 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
       allow(resource_class.supported_devise_modules).to receive(:confirmable?).and_return(true)
       allow(record).to receive(:confirmed?).and_return(false)
       allow(record).to receive(:access_locked?).and_return(false)
-      allow(::I18n).to receive(:t)
-        .with('devise.api.error_responses.confirmable.unconfirmed')
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.confirmable.unconfirmed')
         .and_return('Unconfirmed')
 
       expect(error_response.body).to eq(
@@ -335,7 +335,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         }
       )
 
-      expect(::I18n).to have_received(:t).with('devise.api.error_responses.confirmable.unconfirmed')
+      expect(I18n).to have_received(:t).with('devise.api.error_response.confirmable.unconfirmed')
     end
   end
 end
