@@ -36,7 +36,7 @@ module Devise
   module Api; end
 
   add_module :api,
-             strategy: :api,
+             strategy: false,
              controller: :tokens,
              route: { api: %i[revoke refresh sign_up sign_in info] }
 end
