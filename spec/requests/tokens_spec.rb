@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe Devise::Api::TokensController, type: :request do
   describe 'POST /users/tokens/sign_up' do
     context 'when the user is valid' do
-      let(:params) { FactoryBot.attributes_for(:user) }
+      let(:params) { attributes_for(:user) }
 
       before do
         allow(Devise.api.config.after_successful_sign_up).to receive(:call).and_call_original
@@ -59,8 +59,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the email is already taken' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:params) { FactoryBot.attributes_for(:user, email: user.email) }
+      let(:user) { create(:user) }
+      let(:params) { attributes_for(:user, email: user.email) }
 
       before do
         allow(Devise.api.config.before_sign_up).to receive(:call).and_call_original
@@ -93,7 +93,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
 
   describe 'POST /users/tokens/sign_in' do
     context 'when the user confirmed' do
-      let(:user) { FactoryBot.create(:user, password: 'pass123456') }
+      let(:user) { create(:user, password: 'pass123456') }
       let(:params) { { email: user.email, password: 'pass123456' } }
 
       before do
@@ -136,7 +136,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the user is not confirmed' do
-      let(:user) { FactoryBot.create(:user, password: 'pass123456') }
+      let(:user) { create(:user, password: 'pass123456') }
       let(:params) { { email: user.email, password: 'pass123456' } }
 
       before do
@@ -167,7 +167,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the user is locked' do
-      let(:user) { FactoryBot.create(:user, password: 'pass123456') }
+      let(:user) { create(:user, password: 'pass123456') }
       let(:params) { { email: user.email, password: 'pass123456' } }
 
       before do
@@ -229,7 +229,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the password is invalid' do
-      let(:user) { FactoryBot.create(:user, password: 'pass123456') }
+      let(:user) { create(:user, password: 'pass123456') }
       let(:params) { { email: user.email, password: 'invalid' } }
 
       before do
@@ -271,8 +271,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
 
   describe 'GET /users/tokens/info' do
     context 'when the token is valid and on the header' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, resource_owner: user) }
 
       before do
         get info_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -291,8 +291,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the token is valid and on the url param' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, resource_owner: user) }
 
       before do
         get info_user_tokens_path(access_token: devise_api_token.access_token), as: :json
@@ -311,8 +311,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the token is invalid and on the header' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.build(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
         get info_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -358,8 +358,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the token is expired' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, :access_token_expired, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, :access_token_expired, resource_owner: user) }
 
       before do
         get info_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -383,8 +383,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the token is revoked' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, :revoked, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, :revoked, resource_owner: user) }
 
       before do
         get info_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -410,8 +410,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
 
   describe 'POST /users/tokens/refresh' do
     context 'when the refresh token is valid and on the header' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, resource_owner: user) }
 
       before do
         allow(Devise.api.config.before_refresh).to receive(:call).and_call_original
@@ -447,8 +447,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the refresh token is valid and on the url param' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, resource_owner: user) }
 
       before do
         allow(Devise.api.config.before_refresh).to receive(:call).and_call_original
@@ -484,8 +484,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the refresh token is invalid and on the header' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.build(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
         post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -506,8 +506,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the refresh token is invalid and on the url param' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.build(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
         post refresh_user_tokens_path(access_token: devise_api_token.refresh_token), as: :json
@@ -528,8 +528,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the devise api token is expired' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, :refresh_token_expired, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, :refresh_token_expired, resource_owner: user) }
 
       before do
         post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -550,8 +550,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the devise api token is revoked' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, :revoked, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, :revoked, resource_owner: user) }
 
       before do
         post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -574,8 +574,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
 
   describe 'POST /users/tokens/revoke' do
     context 'when the access token is valid and on the header' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, resource_owner: user) }
 
       before do
         allow(Devise.api.config.before_revoke).to receive(:call).and_call_original
@@ -603,8 +603,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the access token is valid and on the url param' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, resource_owner: user) }
 
       before do
         post revoke_user_tokens_path(access_token: devise_api_token.access_token), as: :json
@@ -624,8 +624,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the access token is invalid and on the header' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.build(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
         post revoke_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -641,8 +641,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the access token is invalid and on the url param' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.build(:devise_api_token, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
         post revoke_user_tokens_path(access_token: devise_api_token.access_token), as: :json
@@ -658,8 +658,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the access token is expired' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, :access_token_expired, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, :access_token_expired, resource_owner: user) }
 
       before do
         post revoke_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
@@ -675,8 +675,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
     end
 
     context 'when the access token is revoked' do
-      let(:user) { FactoryBot.create(:user) }
-      let(:devise_api_token) { FactoryBot.create(:devise_api_token, :revoked, resource_owner: user) }
+      let(:user) { create(:user) }
+      let(:devise_api_token) { create(:devise_api_token, :revoked, resource_owner: user) }
 
       before do
         post revoke_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
