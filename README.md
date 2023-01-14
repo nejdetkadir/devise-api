@@ -59,7 +59,15 @@ class User < ApplicationRecord
 end
 ```
 
-Your user model is now ready to use `devise-api` gem.
+Your user model is now ready to use `devise-api` gem. It will draw routes for token authenticatable and token refreshable.
+
+| Prefix | Verb | URI Pattern | Controller#Action        |
+|--------|------|------------|--------------------------|
+| revoke_user_tokens | POST | /users/tokens/revoke | devise/api/tokens#revoke |
+| refresh_user_tokens | POST | /users/tokens/refresh | devise/api/tokens#refresh |
+| sign_up_user_tokens | POST | /users/tokens/sign_up | devise/api/tokens#sign_up |
+| sign_in_user_tokens | POST | /users/tokens/sign_in | devise/api/tokens#sign_in |
+| info_user_tokens | GET | /users/tokens/info | devise/api/tokens#info |
 
 ## Configuration
 
@@ -72,13 +80,13 @@ Devise.setup do |config|
     # Access Token
     api.access_token.expires_in = 1.hour
     api.access_token.expires_in_infinite = ->(_resource_owner) { false }
-    api.access_token.generator = ->(_resource_owner) { Devise.friendly_token(60)) }
+    api.access_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
 
 
     # Refresh Token
     api.refresh_token.enabled = true
     api.refresh_token.expires_in = 1.week
-    api.refresh_token.generator = ->(_resource_owner) { Devise.friendly_token(60)) }
+    api.refresh_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
     api.refresh_token.expires_in_infinite = ->(_resource_owner) { false }
 
 
