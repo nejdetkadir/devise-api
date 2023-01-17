@@ -69,6 +69,8 @@ Your user model is now ready to use `devise-api` gem. It will draw routes for to
 | sign_in_user_tokens | POST | /users/tokens/sign_in | devise/api/tokens#sign_in |
 | info_user_tokens | GET | /users/tokens/info | devise/api/tokens#info |
 
+### You can look up the [example requests](#example-api-requests).
+
 ## Configuration
 
 `devise-api` is a full configurable gem. You can configure it to your needs. Here is a basic usage example:
@@ -224,6 +226,46 @@ class Api::V1::TokensController < YourBaseController
     end
   end
 end
+```
+
+## Example API requests
+
+### Sign in
+```curl
+curl --location --request POST 'http://127.0.0.1:3000/users/tokens/sign_in' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "test@development.com",
+    "password": "123456"
+}'
+```
+
+### Sign up
+```curl
+curl --location --request POST 'http://127.0.0.1:3000/users/tokens/sign_up' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "email": "test@development.com",
+    "password": "123456"
+}'
+```
+
+### Refresh token
+```curl
+curl --location --request POST 'http://127.0.0.1:3000/users/tokens/refresh' \
+--header 'Authorization: Bearer <refresh_token>'
+```
+
+### Revoke
+```curl
+curl --location --request POST 'http://127.0.0.1:3000/users/tokens/revoke' \
+--header 'Authorization: Bearer <access_token>'
+```
+
+### Info
+```curl
+curl --location --request GET 'http://127.0.0.1:3000/users/tokens/info' \
+--header 'Authorization: Bearer <access_token>'
 ```
 
 ## Development
