@@ -41,7 +41,7 @@ module Devise
       end
 
       def inactive?
-        revoked? && expired?
+        revoked? || expired?
       end
 
       def expired?
@@ -51,7 +51,7 @@ module Devise
       end
 
       def refresh_token_expired?
-        return false unless Devise.api.config.refresh_token.expires_in_infinite.call(resource_owner)
+        return false if Devise.api.config.refresh_token.expires_in_infinite.call(resource_owner)
 
         Time.now.utc > refresh_token_expires_at
       end
