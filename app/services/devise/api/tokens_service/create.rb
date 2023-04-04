@@ -8,7 +8,7 @@ module Devise
         option :previous_refresh_token, type: Types::String | Types::Nil, default: proc { nil }
 
         def call
-          return Failure(:invalid_resource_owner) unless resource_owner.respond_to?(:access_tokens)
+          return Failure(error: :invalid_resource_owner) unless resource_owner.respond_to?(:access_tokens)
 
           devise_api_token = yield create_devise_api_token
 
