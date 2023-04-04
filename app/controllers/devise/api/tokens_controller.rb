@@ -4,7 +4,7 @@ module Devise
   module Api
     class TokensController < Devise.api.config.base_controller.constantize
       skip_before_action :verify_authenticity_token, raise: false
-      before_action :authenticate_devise_api_token!, only: %i[info refresh]
+      before_action :authenticate_devise_api_token!, only: %i[info]
 
       respond_to :json
 
@@ -103,9 +103,23 @@ module Devise
           return render json: error_response.body, status: error_response.status
         end
 
-        Devise.api.config.before_refresh.call(current_devise_api_token, request)
+        if current_devise_api_refresh_token.blank?
+          error_response = Devise::Api::Responses::ErrorResponse.new(request, error: :invalid_token,
+                                                                              resource_class: resource_class)
 
-        service = Devise::Api::TokensService::Refresh.new(devise_api_token: current_devise_api_token).call
+          return render json: error_response.body, status: error_response.status
+        end
+
+        if current_devise_api_refresh_token.revoked?
+          error_response = Devise::Api::Responses::ErrorResponse.new(request, error: :revoked_token,
+                                                                              resource_class: resource_class)
+
+          render json: error_response.body, status: error_response.status
+        end
+
+        Devise.api.config.before_refresh.call(current_devise_api_refresh_token, request)
+
+        service = Devise::Api::TokensService::Refresh.new(devise_api_token: current_devise_api_refresh_token).call
 
         if service.success?
           token_response = Devise::Api::Responses::TokenResponse.new(request, token: service.success,
@@ -140,6 +154,14 @@ module Devise
         return unless resource_class.supported_devise_modules.trackable?
 
         resource_owner.update_tracked_fields!(request)
+      end
+
+      def current_devise_api_refresh_token
+        return @current_devise_api_refresh_token if @current_devise_api_refresh_token
+
+        token = find_devise_api_token
+        devise_api_token_model = Devise.api.config.base_token_model.constantize
+        @current_devise_api_refresh_token = devise_api_token_model.find_by(refresh_token: token)
       end
     end
   end
