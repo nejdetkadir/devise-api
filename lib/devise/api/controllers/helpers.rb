@@ -38,18 +38,11 @@ module Devise
         end
 
         def current_devise_api_token
+          return @current_devise_api_token if @current_devise_api_token
+
           token = find_devise_api_token
-
           devise_api_token_model = Devise.api.config.base_token_model.constantize
-
-          if Devise.api.config.refresh_token.enabled
-            return devise_api_token_model
-                   .where(access_token: token)
-                   .or(devise_api_token_model.where(refresh_token: token))
-                     &.first
-          end
-
-          devise_api_token_model.find_by(access_token: token)
+          @current_devise_api_token = devise_api_token_model.find_by(access_token: token)
         end
 
         def current_devise_api_user
