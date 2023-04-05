@@ -12,6 +12,7 @@ module Devise
           expired_refresh_token
           revoked_token
           refresh_token_disabled
+          sign_up_disabled
           invalid_refresh_token
           invalid_email
           invalid_resource_owner

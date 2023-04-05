@@ -8,6 +8,7 @@ en:
         expired_refresh_token: "Refresh token has expired"
         revoked_token: "Token has been revoked"
         refresh_token_disabled: "Refresh token is disabled for this application"
+        sign_up_disabled: "Sign up is disabled for this application"
         invalid_refresh_token: "Refresh token is invalid"
         invalid_email: "Email is invalid"
         invalid_resource_owner: "Resource owner is invalid"

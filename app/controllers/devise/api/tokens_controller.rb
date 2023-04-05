@@ -10,6 +10,13 @@ module Devise
 
       # rubocop:disable Metrics/AbcSize
       def sign_up
+        unless Devise.api.config.sign_up.enabled
+          error_response = Devise::Api::Responses::ErrorResponse.new(request, error: :sign_up_disabled,
+                                                                     resource_class: resource_class)
+
+          render json: error_response.body, status: error_response.status
+        end
+
         Devise.api.config.before_sign_up.call(sign_up_params, request, resource_class)
 
         service = Devise::Api::ResourceOwnerService::SignUp.new(params: sign_up_params,
