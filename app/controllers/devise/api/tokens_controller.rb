@@ -14,7 +14,7 @@ module Devise
           error_response = Devise::Api::Responses::ErrorResponse.new(request, error: :sign_up_disabled,
                                                                      resource_class: resource_class)
 
-          render json: error_response.body, status: error_response.status
+          return render json: error_response.body, status: error_response.status
         end
 
         Devise.api.config.before_sign_up.call(sign_up_params, request, resource_class)
