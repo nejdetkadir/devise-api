@@ -113,6 +113,7 @@ module Devise
           invalid_email_error? ||
             invalid_refresh_token_error? ||
             refresh_token_disabled_error? ||
+            sign_up_disabled_error? ||
             invalid_resource_owner_error?
         end
       end
