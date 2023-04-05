@@ -91,6 +91,8 @@ Devise.setup do |config|
     api.refresh_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
     api.refresh_token.expires_in_infinite = ->(_resource_owner) { false }
 
+    # Sign up
+    api.sign_up.enabled = true
 
     # Authorization
     api.authorization.key = 'Authorization'
