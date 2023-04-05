@@ -11,6 +11,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         expired_refresh_token
         revoked_token
         refresh_token_disabled
+        sign_up_disabled
         invalid_refresh_token
         invalid_email
         invalid_resource_owner
@@ -27,6 +28,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
       expect(described_class.new(nil, error: :expired_refresh_token)).to respond_to(:expired_refresh_token_error?)
       expect(described_class.new(nil, error: :revoked_token)).to respond_to(:revoked_token_error?)
       expect(described_class.new(nil, error: :refresh_token_disabled)).to respond_to(:refresh_token_disabled_error?)
+      expect(described_class.new(nil, error: :sign_up_disabled)).to respond_to(:sign_up_disabled_error?)
       expect(described_class.new(nil, error: :invalid_refresh_token)).to respond_to(:invalid_refresh_token_error?)
       expect(described_class.new(nil, error: :invalid_email)).to respond_to(:invalid_email_error?)
       expect(described_class.new(nil, error: :invalid_resource_owner)).to respond_to(:invalid_resource_owner_error?)
@@ -135,6 +137,27 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
       )
 
       expect(I18n).to have_received(:t).with('devise.api.error_response.refresh_token_disabled')
+    end
+  end
+
+  context 'sign up disabled error response' do
+    let(:error_response) { described_class.new(nil, error: :sign_up_disabled) }
+
+    it 'has a status of 400' do
+      expect(error_response.status).to eq :bad_request
+    end
+
+    it 'has a body with an error and error description' do
+      allow(I18n).to receive(:t)
+                       .with('devise.api.error_response.sign_up_disabled')
+                       .and_return('Sign up is disabled')
+
+      expect(error_response.body).to eq(
+                                       error: :sign_up_disabled,
+                                       error_description: ['Sign up is disabled']
+                                     )
+
+      expect(I18n).to have_received(:t).with('devise.api.error_response.sign_up_disabled')
     end
   end
 

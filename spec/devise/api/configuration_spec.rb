@@ -48,6 +48,12 @@ RSpec.describe Devise::Api::Configuration do
       end
     end
 
+    context 'sign_up' do
+      it 'enabled is true' do
+        expect(config.sign_up.enabled).to eq true
+      end
+    end
+
     context 'authorization' do
       it 'key is Authorization' do
         expect(config.authorization.key).to eq 'Authorization'
