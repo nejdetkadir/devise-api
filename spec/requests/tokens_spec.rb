@@ -417,7 +417,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
         allow(Devise.api.config.before_refresh).to receive(:call).and_call_original
         allow(Devise.api.config.after_successful_refresh).to receive(:call).and_call_original
 
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, true), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
       end
 
       it 'returns http success' do
