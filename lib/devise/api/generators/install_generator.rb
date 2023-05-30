@@ -40,22 +40,6 @@ module Devise
         def migration_version
           "[#{ActiveRecord::VERSION::MAJOR}.#{ActiveRecord::VERSION::MINOR}]"
         end
-
-        def primary_key_type
-          fallback = :integer
-
-          begin
-            ActiveRecord::Base.connection.supports_pgcrypto_uuid? ? :uuid : fallback
-          rescue StandardError
-            fallback
-          end
-        end
-
-        def table_defaults_for_primary_key_type
-          return ', type: :uuid' if primary_key_type == :uuid
-
-          ''
-        end
       end
     end
   end
