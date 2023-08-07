@@ -51,6 +51,10 @@ module Devise
 
         private
 
+        def resource_class
+          current_devise_api_user&.class
+        end
+
         def extract_devise_api_token_from_params
           params[Devise.api.config.authorization.params_key]
         end
