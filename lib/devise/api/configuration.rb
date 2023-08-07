@@ -20,6 +20,10 @@ module Devise
         setting :expires_in_infinite, default: proc { |_resource_owner| false }, reader: true
       end
 
+      setting :sign_up, reader: true do
+        setting :enabled, default: true, reader: true
+      end
+
       setting :authorization, reader: true do
         setting :key, default: 'Authorization', reader: true
         setting :scheme, default: 'Bearer', reader: true
