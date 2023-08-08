@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ClassLength
 module Devise
   module Api
     class TokensController < Devise.api.config.base_controller.constantize
@@ -12,7 +13,7 @@ module Devise
       def sign_up
         unless Devise.api.config.sign_up.enabled
           error_response = Devise::Api::Responses::ErrorResponse.new(request, error: :sign_up_disabled,
-                                                                     resource_class: resource_class)
+                                                                              resource_class: resource_class)
 
           return render json: error_response.body, status: error_response.status
         end
@@ -173,3 +174,4 @@ module Devise
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

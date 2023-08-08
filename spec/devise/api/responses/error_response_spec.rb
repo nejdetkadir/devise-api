@@ -149,13 +149,13 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
 
     it 'has a body with an error and error description' do
       allow(I18n).to receive(:t)
-                       .with('devise.api.error_response.sign_up_disabled')
-                       .and_return('Sign up is disabled')
+        .with('devise.api.error_response.sign_up_disabled')
+        .and_return('Sign up is disabled')
 
       expect(error_response.body).to eq(
-                                       error: :sign_up_disabled,
-                                       error_description: ['Sign up is disabled']
-                                     )
+        error: :sign_up_disabled,
+        error_description: ['Sign up is disabled']
+      )
 
       expect(I18n).to have_received(:t).with('devise.api.error_response.sign_up_disabled')
     end
