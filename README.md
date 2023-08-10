@@ -157,10 +157,12 @@ module Devise::Api::Responses::TokenResponseDecorator
 end
 ```
 
-Then you need to prepend your decorator to the response class. For example:
+Then you need to load and prepend your decorator to the response class. For example:
 
 ```ruby
 # config/initializers/devise.rb
+require 'devise/api/responses/token_response_decorator' # Either do this or autoload the lib directory
+
 Devise.setup do |config|
 end
 
