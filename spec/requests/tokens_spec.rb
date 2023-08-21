@@ -489,7 +489,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
       end
 
       it 'returns http unauthorized' do
@@ -533,7 +533,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       let(:devise_api_token) { create(:devise_api_token, :refresh_token_expired, resource_owner: user) }
 
       before do
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
       end
 
       it 'returns http unauthorized' do
@@ -541,8 +541,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       end
 
       it 'returns an error response' do
-        expect(parsed_body.error).to eq 'invalid_token'
-        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.invalid_token')])
+        expect(parsed_body.error).to eq 'expired_refresh_token'
+        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.expired_refresh_token')])
       end
 
       it 'does not refresh the token' do
@@ -555,7 +555,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       let(:devise_api_token) { create(:devise_api_token, :revoked, resource_owner: user) }
 
       before do
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
       end
 
       it 'returns http unauthorized' do
@@ -563,8 +563,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       end
 
       it 'returns an error response' do
-        expect(parsed_body.error).to eq 'invalid_token'
-        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.invalid_token')])
+        expect(parsed_body.error).to eq 'revoked_token'
+        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.revoked_token')])
       end
 
       it 'does not refresh the token' do
