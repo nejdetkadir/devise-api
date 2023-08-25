@@ -116,7 +116,7 @@ Devise.setup do |config|
     # Before callbacks
     api.before_sign_in = ->(_params, _request, _resource_class) { }
     api.before_sign_up = ->(_params, _request, _resource_class) { }
-    api.before_refresh = ->(_params, _request, _resource_class) { }
+    api.before_refresh = ->(_params, _request) { } # Either remove the extra argument here or add the argument in the call (devise-api-0.1.3/app/controllers/devise/api/tokens_controller.rb:128)
     api.before_revoke = ->(_params, _request, _resource_class) { }
   end
 end
