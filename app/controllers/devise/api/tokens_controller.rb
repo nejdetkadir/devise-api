@@ -122,7 +122,7 @@ module Devise
           error_response = Devise::Api::Responses::ErrorResponse.new(request, error: :revoked_token,
                                                                               resource_class: resource_class)
 
-          render json: error_response.body, status: error_response.status
+          return render json: error_response.body, status: error_response.status
         end
 
         Devise.api.config.before_refresh.call(current_devise_api_refresh_token, request)
