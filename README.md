@@ -93,6 +93,7 @@ Devise.setup do |config|
 
     # Sign up
     api.sign_up.enabled = true
+    api.sign_up.extra_fields = []
 
     # Authorization
     api.authorization.key = 'Authorization'
