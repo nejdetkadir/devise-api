@@ -149,7 +149,7 @@ module Devise
       private
 
       def sign_up_params
-        params.permit(*resource_class.authentication_keys,
+        params.permit(*Devise.api.config.sign_up.extra_fields, *resource_class.authentication_keys,
                       *::Devise::ParameterSanitizer::DEFAULT_PERMITTED_ATTRIBUTES[:sign_up]).to_h
       end
 

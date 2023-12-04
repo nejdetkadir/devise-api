@@ -22,6 +22,7 @@ module Devise
 
       setting :sign_up, reader: true do
         setting :enabled, default: true, reader: true
+        setting :extra_fields, default: [], reader: true
       end
 
       setting :authorization, reader: true do
