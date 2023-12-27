@@ -52,6 +52,10 @@ RSpec.describe Devise::Api::Configuration do
       it 'enabled is true' do
         expect(config.sign_up.enabled).to eq true
       end
+
+      it 'extra_fields is an empty array' do
+        expect(config.sign_up.extra_fields).to eq []
+      end
     end
 
     context 'authorization' do
