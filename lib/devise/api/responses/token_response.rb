@@ -47,7 +47,9 @@ module Devise
 
         def default_resource_owner
           keys_to_extract = %i[id email created_at updated_at]
-          keys_to_extract |= Devise.api.config.extra_fields.map(&:to_sym) if Devise.api.config.extra_fields.present?
+          if Devise.api.config.sign_up.extra_fields.present?
+            keys_to_extract |= Devise.api.config.sign_up.extra_fields.map(&:to_sym)
+          end
 
           resource_owner.slice(*keys_to_extract)
         end
