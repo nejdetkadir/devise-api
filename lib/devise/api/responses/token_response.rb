@@ -41,13 +41,15 @@ module Devise
             refresh_token: Devise.api.config.refresh_token.enabled ? token.refresh_token : nil,
             expires_in: token.expires_in,
             token_type: ::Devise.api.config.authorization.scheme,
-            resource_owner: {
-              id: resource_owner.id,
-              email: resource_owner.email,
-              created_at: resource_owner.created_at,
-              updated_at: resource_owner.updated_at
-            }
+            resource_owner: default_resource_owner
           }.compact
+        end
+
+        def default_resource_owner
+          keys_to_extract = %i[id email created_at updated_at]
+          keys_to_extract |= Devise.api.config.extra_fields.map(&:to_sym) if Devise.api.config.extra_fields.present?
+
+          resource_owner.slice(*keys_to_extract)
         end
 
         def status
