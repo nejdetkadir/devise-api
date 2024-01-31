@@ -489,7 +489,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       let(:devise_api_token) { build(:devise_api_token, resource_owner: user) }
 
       before do
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token),
+                                       as: :json
       end
 
       it 'returns http unauthorized' do
@@ -533,7 +534,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       let(:devise_api_token) { create(:devise_api_token, :refresh_token_expired, resource_owner: user) }
 
       before do
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token),
+                                       as: :json
       end
 
       it 'returns http unauthorized' do
@@ -555,7 +557,8 @@ RSpec.describe Devise::Api::TokensController, type: :request do
       let(:devise_api_token) { create(:devise_api_token, :revoked, resource_owner: user) }
 
       before do
-        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token), as: :json
+        post refresh_user_tokens_path, headers: authentication_headers_for(user, devise_api_token, :refresh_token),
+                                       as: :json
       end
 
       it 'returns http unauthorized' do
