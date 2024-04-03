@@ -8,7 +8,7 @@ module Devise
         option :resource_class, type: Types::Class
 
         def call
-          resource = resource_class.find_for_authentication(email: params[:email])
+          resource = resource_class.find_for_authentication(params.slice(*resource_class.authentication_keys))
           return Failure(error: :invalid_email, record: nil) if resource.blank?
           return Failure(error: :invalid_authentication, record: resource) unless authenticate!(resource)
 
