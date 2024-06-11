@@ -4,6 +4,7 @@
 module Devise
   module Api
     class TokensController < Devise.api.config.base_controller.constantize
+      wrap_parameters false
       skip_before_action :verify_authenticity_token, raise: false
       before_action :authenticate_devise_api_token!, only: %i[info]
 
