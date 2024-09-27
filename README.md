@@ -117,8 +117,8 @@ Devise.setup do |config|
     # Before callbacks
     api.before_sign_in = ->(_params, _request, _resource_class) { }
     api.before_sign_up = ->(_params, _request, _resource_class) { }
-    api.before_refresh = ->(_params, _request, _resource_class) { }
-    api.before_revoke = ->(_params, _request, _resource_class) { }
+    api.before_refresh = ->(_token_model, _request) { }
+    api.before_revoke = ->(_token_model, _request) { }
   end
 end
 ```
