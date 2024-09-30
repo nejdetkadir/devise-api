@@ -3,10 +3,26 @@
 require 'spec_helper'
 
 RSpec.describe Devise::Api::Responses::TokenResponse do
-  context 'action types' do
-    let(:resource_owner) { double('resource_owner') }
-    let(:token) { double('token', resource_owner: resource_owner) }
+  let(:resource_owner) do
+    FactoryBot.build(
+      :user,
+      id: 1,
+      email: 'test@development.com',
+      created_at: Time.now,
+      updated_at: Time.now
+    )
+  end
+  let(:token) do
+    FactoryBot.build(
+      :devise_api_token,
+      resource_owner: resource_owner,
+      access_token: 'access_token',
+      refresh_token: 'refresh_token',
+      expires_in: 3600
+    )
+  end
 
+  context 'action types' do
     it 'has a list of actions' do
       expect(described_class::ACTIONS).to eq(%i[sign_in sign_up refresh revoke info])
     end
@@ -21,17 +37,6 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
   end
 
   context 'sign in' do
-    let(:resource_owner) do
-      double('resource_owner',
-             id: 1,
-             email: 'test@development.com',
-             created_at: Time.now,
-             updated_at: Time.now)
-    end
-    let(:token) do
-      double('token', resource_owner: resource_owner, access_token: 'access_token', refresh_token: 'refresh_token',
-                      expires_in: 3600)
-    end
     let(:token_response) { described_class.new(nil, token: token, action: :sign_in) }
 
     it 'returns the correct body' do
@@ -45,7 +50,7 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
                                             email: 'test@development.com',
                                             created_at: resource_owner.created_at,
                                             updated_at: resource_owner.updated_at
-                                          }
+                                          }.stringify_keys
                                         })
     end
 
@@ -55,24 +60,10 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
   end
 
   context 'sign up' do
-    let(:supported_devise_modules) { double('supported_devise_modules', confirmable?: true) }
-    let(:resource_owner_class) { double('resource_owner_class', supported_devise_modules: supported_devise_modules) }
-    let(:resource_owner) do
-      double('resource_owner',
-             id: 1,
-             email: 'test@development.com',
-             created_at: Time.now,
-             updated_at: Time.now,
-             class: resource_owner_class,
-             confirmed?: true)
-    end
-    let(:token) do
-      double('token', resource_owner: resource_owner, access_token: 'access_token', refresh_token: 'refresh_token',
-                      expires_in: 3600)
-    end
     let(:token_response) { described_class.new(nil, token: token, action: :sign_up) }
 
     it 'returns the correct body' do
+      allow(resource_owner).to receive(:confirmed?).and_return(true)
       expect(token_response.body).to eq({
                                           token: 'access_token',
                                           refresh_token: 'refresh_token',
@@ -83,7 +74,7 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
                                             email: 'test@development.com',
                                             created_at: resource_owner.created_at,
                                             updated_at: resource_owner.updated_at
-                                          },
+                                          }.stringify_keys,
                                           confirmable: {
                                             confirmed: true
                                           }
@@ -96,17 +87,6 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
   end
 
   context 'refresh' do
-    let(:resource_owner) do
-      double('resource_owner',
-             id: 1,
-             email: 'test@development.com',
-             created_at: Time.now,
-             updated_at: Time.now)
-    end
-    let(:token) do
-      double('token', resource_owner: resource_owner, access_token: 'access_token', refresh_token: 'refresh_token',
-                      expires_in: 3600)
-    end
     let(:token_response) { described_class.new(nil, token: token, action: :refresh) }
 
     it 'returns the correct body' do
@@ -120,7 +100,7 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
                                             email: 'test@development.com',
                                             created_at: resource_owner.created_at,
                                             updated_at: resource_owner.updated_at
-                                          }
+                                          }.stringify_keys
                                         })
     end
 
@@ -130,17 +110,6 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
   end
 
   context 'revoke' do
-    let(:resource_owner) do
-      double('resource_owner',
-             id: 1,
-             email: 'test@development.com',
-             created_at: Time.now,
-             updated_at: Time.now)
-    end
-    let(:token) do
-      double('token', resource_owner: resource_owner, access_token: 'access_token', refresh_token: 'refresh_token',
-                      expires_in: 3600)
-    end
     let(:token_response) { described_class.new(nil, token: token, action: :revoke) }
 
     it 'returns the correct body' do
@@ -153,26 +122,17 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
   end
 
   context 'info' do
-    let(:resource_owner) do
-      double('resource_owner',
-             id: 1,
-             email: 'test@development.com',
-             created_at: Time.now,
-             updated_at: Time.now)
-    end
-    let(:token) do
-      double('token', resource_owner: resource_owner, access_token: 'access_token', refresh_token: 'refresh_token',
-                      expires_in: 3600)
-    end
     let(:token_response) { described_class.new(nil, token: token, action: :info) }
 
     it 'returns the correct body' do
-      expect(token_response.body).to eq({
-                                          id: 1,
-                                          email: 'test@development.com',
-                                          created_at: resource_owner.created_at,
-                                          updated_at: resource_owner.updated_at
-                                        })
+      expect(token_response.body).to eq(
+        {
+          id: 1,
+          email: 'test@development.com',
+          created_at: resource_owner.created_at,
+          updated_at: resource_owner.updated_at
+        }.stringify_keys
+      )
     end
 
     it 'returns the correct status' do
