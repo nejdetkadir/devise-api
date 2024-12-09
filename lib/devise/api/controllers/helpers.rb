@@ -38,7 +38,7 @@ module Devise
         end
 
         def current_devise_api_token
-          return @current_devise_api_token if @current_devise_api_token
+          return @current_devise_api_token if defined?(@current_devise_api_token)
 
           token = find_devise_api_token
           devise_api_token_model = Devise.api.config.base_token_model.constantize
