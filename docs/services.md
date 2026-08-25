@@ -52,7 +52,6 @@ graph LR
 - **Inputs:** `resource_owner` (untyped), `previous_refresh_token: String | Nil = nil`
 - **Logic:** guards `resource_owner.respond_to?(:access_tokens)` → builds row with generated unique access/refresh tokens, `expires_in` snapshot from config, `previous_refresh_token` passthrough.
 - **Success:** the token. **Failures:** `:invalid_resource_owner`, `:devise_api_token_create_error`.
-- ⚠ Contains a dead private method `authenticate_service` referencing undefined `params`/`resource_class` (never called; tracked in known-issues).
 
 ### `Refresh`
 - **Inputs:** `devise_api_token` (typed `Types.Instance(<base_token_model>)` — resolved at class load), `resource_owner` (defaults to the token's owner)
