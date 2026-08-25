@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - 2026-08-25
+
+### Changed
+- Upgraded the development/test dependency tree to current stable versions (Rails 8.1, devise 5.0, puma 7, sqlite3 2, rspec-rails 8, rubocop 1.90), resolving the open Dependabot alerts; runtime gemspec constraints for host apps are unchanged (Ruby >= 2.7, Rails >= 6.0) (#58)
+- CI now tests against Ruby 3.2/3.3/3.4/4.0 (Rails 8 requires Ruby >= 3.2)
+
 ## [0.3.0] - 2026-08-25
 
 ### Added
