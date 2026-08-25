@@ -122,4 +122,33 @@ RSpec.describe Devise::Api::Configuration do
       end
     end
   end
+
+  context 'overridden settings' do
+    before do
+      config.config.access_token.expires_in = 2.hours
+      config.config.access_token.generator = proc { |_resource_owner| 'custom token' }
+      config.config.refresh_token.enabled = false
+      config.config.sign_up.enabled = false
+      config.config.sign_up.extra_fields = [:name]
+      config.config.authorization.location = :header
+    end
+
+    it 'reflects the overridden values' do
+      expect(config.access_token.expires_in).to eq 2.hours
+      expect(config.access_token.generator.call).to eq 'custom token'
+      expect(config.refresh_token.enabled).to eq false
+      expect(config.sign_up.enabled).to eq false
+      expect(config.sign_up.extra_fields).to eq [:name]
+      expect(config.authorization.location).to eq :header
+    end
+
+    it 'does not affect other instances' do
+      other_config = described_class.new
+
+      expect(other_config.access_token.expires_in).to eq 1.hour
+      expect(other_config.refresh_token.enabled).to eq true
+      expect(other_config.sign_up.enabled).to eq true
+      expect(other_config.authorization.location).to eq :both
+    end
+  end
 end

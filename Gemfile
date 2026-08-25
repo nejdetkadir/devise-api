@@ -47,3 +47,6 @@ gem 'rspec-core'
 
 # Common code needed by the other RSpec gems. Not intended for direct use [https://github.com/rspec/rspec-support]
 gem 'rspec-support'
+
+# Code coverage analysis tool for Ruby [https://github.com/simplecov-ruby/simplecov]
+gem 'simplecov', '~> 0.22', require: false

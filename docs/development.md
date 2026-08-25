@@ -41,7 +41,7 @@ Two workflows on every push, matrix over Ruby 2.7.7 / 3.0.5 / 3.1.3 / 3.2.0:
 - `test.yml` — `bundle install` + `bundle exec rake rspec`
 - `rubocop.yml` — `bundle exec rubocop --config .rubocop.yml --parallel`
 
-No coverage reporting, no scheduled builds, no release automation.
+SimpleCov coverage runs with the suite (95% line minimum enforced on full-suite runs — see [testing.md](testing.md)). No scheduled builds, no release automation.
 
 ## Pointers for common change types
 

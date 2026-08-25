@@ -18,8 +18,8 @@ Defined twice: memoized in `TokensController` (`app/controllers/devise/api/token
 
 ## Dead / vestigial code
 
-### KI-5 · Dead method in `TokensService::Create`
-`#authenticate_service` (`app/services/devise/api/tokens_service/create.rb:20-23`) is never called and references `params` / `resource_class`, which don't exist on this service — it would `NameError` if invoked. Copy-paste leftover; delete.
+### KI-5 · ~~Dead method in `TokensService::Create`~~ (resolved)
+`#authenticate_service` was never called and referenced `params` / `resource_class`, which didn't exist on this service — it would have `NameError`d if invoked. Copy-paste leftover; deleted as part of the coverage push.
 
 ### KI-6 · RBS stub
 `sig/devise/api.rbs` declares only the `VERSION` constant. Either flesh out signatures or drop the `sig/` directory to avoid signaling type support that doesn't exist.
@@ -43,14 +43,14 @@ Only records `0.0.0` while the gem is at `0.2.0` with substantive releases in be
 
 ## Test-coverage gaps (feeds the "add more tests" milestone)
 
-### KI-12 · Service specs are placeholders
-All six `spec/services/**` files only assert inheritance from `BaseService`. Real branch coverage (monad contracts per [services.md](../services.md)) is missing at the unit level.
+### KI-12 · ~~Service specs are placeholders~~ (resolved)
+All six `spec/services/**` files now assert the monad contracts (`Success`/`Failure` per branch, per [services.md](../services.md)), including the failure paths unreachable through the HTTP API (`:invalid_resource_owner`, `:devise_api_token_create_error`, `:devise_api_token_revoke_error`, sign-up transaction rollback).
 
-### KI-13 · No generator specs
-`rails g devise_api:install` (migration template rendering incl. UUID primary-key handling, locale copy) is untested despite `spec_helper` requiring the generator test harness.
+### KI-13 · ~~No generator specs~~ (resolved)
+`rails g devise_api:install` is covered by `spec/devise/api/generators/install_generator_spec.rb` (migration template rendering with the current Active Record version, locale copy, migration numbering).
 
-### KI-14 · Non-default configuration is untested
-No specs exercise: `authorization.location = :header`/`:params` exclusively, custom `authorization.key`/`scheme`/`params_key`, `sign_up.enabled = false`, `refresh_token.enabled = false`, `expires_in_infinite` procs, custom generators, `sign_up.extra_fields`, `base_token_model`/`base_controller` overrides, or any before/after callback invocation.
+### KI-14 · Non-default configuration is untested (mostly resolved)
+`spec/requests/configuration_overrides_spec.rb` covers `authorization.location = :header`/`:params` exclusively, `sign_up.enabled = false`, `refresh_token.enabled = false` and `sign_up.extra_fields` end-to-end; `spec/devise/api/token_spec.rb` covers `expires_in_infinite` procs and custom generators; `spec/devise/api/configuration_spec.rb` covers overrides on fresh instances; callback invocation was already asserted in `spec/requests/tokens_spec.rb`. Still untested: custom `authorization.key`/`scheme`/`params_key` and `base_token_model`/`base_controller` overrides.
 
 ## Cross-references into security review
 

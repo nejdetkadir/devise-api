@@ -12,7 +12,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 20_230_113_213_619) do
+ActiveRecord::Schema[7.0].define(version: 20_260_825_000_002) do
+  create_table 'admin_users', force: :cascade do |t|
+    t.string 'email', default: '', null: false
+    t.string 'encrypted_password', default: '', null: false
+    t.datetime 'created_at', null: false
+    t.datetime 'updated_at', null: false
+    t.index ['email'], name: 'index_admin_users_on_email', unique: true
+  end
+
   create_table 'devise_api_tokens', force: :cascade do |t|
     t.string 'resource_owner_type', null: false
     t.integer 'resource_owner_id', null: false
@@ -47,6 +55,7 @@ ActiveRecord::Schema[7.0].define(version: 20_230_113_213_619) do
     t.integer 'failed_attempts', default: 0, null: false
     t.string 'unlock_token'
     t.datetime 'locked_at'
+    t.string 'name'
     t.datetime 'created_at', null: false
     t.datetime 'updated_at', null: false
     t.index ['confirmation_token'], name: 'index_users_on_confirmation_token', unique: true
