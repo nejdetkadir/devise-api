@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0] - 2026-08-25
 
 ### Added
 - Refresh token rotation with reuse detection behind `refresh_token.rotation_enabled` (default `false`): each refresh revokes the presented refresh token, and presenting an already-rotated/revoked refresh token revokes the whole token family (SEC-2)
