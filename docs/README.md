@@ -25,7 +25,7 @@ Internal documentation for contributors and AI coding agents. These documents de
 ## Ground rules for AI-driven development in this repo
 
 1. **Read [architecture.md](architecture.md) first.** It explains the two invariants that shape everything: the single `Devise.api.config` global, and the string-based `base_token_model` / `base_controller` indirection (`constantize` at use sites — never hardcode `Devise::Api::Token` or the controller class in library code).
-2. **Behavioral changes need request specs.** Real coverage lives in `spec/requests/`; service specs are currently placeholders (see [testing.md](testing.md)).
+2. **Behavioral changes need request specs.** End-to-end coverage lives in `spec/requests/`; service specs (`spec/services/`) assert the monad contracts (see [testing.md](testing.md)).
 3. **Error types are public API.** Adding/renaming a symbol in `ErrorResponse::ERROR_TYPES` requires a locale entry in `config/locales/en.yml`, a status mapping, and an entry in [api-reference.md](api-reference.md).
 4. **Schema changes touch three places:** the generator template (`lib/devise/api/generators/templates/migration.rb.erb`), the dummy app (`spec/dummy/db/migrate` + `spec/dummy/db/schema.rb`), and [data-model.md](data-model.md). Host apps upgrade via new migrations, so also consider an upgrade path.
 5. **Run `bundle exec rake` before finishing** — it runs RSpec and RuboCop, exactly what CI runs.

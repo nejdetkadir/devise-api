@@ -32,9 +32,11 @@ module Devise
         end
 
         def current_devise_api_refresh_token
-          token = find_devise_api_token
+          return @current_devise_api_refresh_token if defined?(@current_devise_api_refresh_token)
 
-          Devise.api.config.base_token_model.constantize.find_by(refresh_token: token)
+          token = find_devise_api_token
+          devise_api_token_model = Devise.api.config.base_token_model.constantize
+          @current_devise_api_refresh_token = devise_api_token_model.find_by(refresh_token: token)
         end
 
         def current_devise_api_token

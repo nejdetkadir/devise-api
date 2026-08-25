@@ -23,6 +23,12 @@ RSpec.describe Devise::Api::Controllers::Helpers do
       it 'returns the token record' do
         expect(host.current_devise_api_refresh_token).to eq(devise_api_token)
       end
+
+      it 'memoizes the lookup' do
+        2.times { host.current_devise_api_refresh_token }
+
+        expect(host).to have_received(:find_devise_api_token).once
+      end
     end
 
     context 'when no token can be extracted' do
@@ -32,6 +38,12 @@ RSpec.describe Devise::Api::Controllers::Helpers do
 
       it 'returns nil' do
         expect(host.current_devise_api_refresh_token).to be_nil
+      end
+
+      it 'memoizes the nil result' do
+        2.times { host.current_devise_api_refresh_token }
+
+        expect(host).to have_received(:find_devise_api_token).once
       end
     end
   end

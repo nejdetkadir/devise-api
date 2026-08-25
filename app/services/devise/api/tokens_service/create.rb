@@ -4,6 +4,10 @@ module Devise
   module Api
     module TokensService
       class Create < Devise::Api::BaseService
+        # Retries after ActiveRecord::RecordNotUnique when two concurrent requests win the
+        # application-level uniqueness check with the same generated token (see unique DB indexes)
+        MAX_TOKEN_GENERATION_ATTEMPTS = 3
+
         option :resource_owner
         option :previous_refresh_token, type: Types::String | Types::Nil, default: proc { nil }
 
@@ -18,11 +22,20 @@ module Devise
         private
 
         def create_devise_api_token
-          devise_api_token = resource_owner.access_tokens.new(params)
+          attempts = 0
 
-          return Success(devise_api_token) if devise_api_token.save
+          begin
+            devise_api_token = resource_owner.access_tokens.new(params)
 
-          Failure(error: :devise_api_token_create_error, record: devise_api_token)
+            return Success(devise_api_token) if devise_api_token.save
+
+            Failure(error: :devise_api_token_create_error, record: devise_api_token)
+          rescue ::ActiveRecord::RecordNotUnique
+            attempts += 1
+            retry if attempts < MAX_TOKEN_GENERATION_ATTEMPTS
+
+            raise
+          end
         end
 
         def params

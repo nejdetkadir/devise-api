@@ -49,6 +49,34 @@ RSpec.describe Devise::Api::TokensService::Create do
       end
     end
 
+    context 'when the database rejects a duplicate token' do
+      let(:resource_owner) { create(:user) }
+      let(:existing_token) { create(:devise_api_token, resource_owner: resource_owner) }
+
+      before do
+        # Simulate the check-then-insert race: the generator returns an already-taken token first,
+        # the application-level uniqueness validation is bypassed and the unique index rejects it
+        allow_any_instance_of(Devise::Api::Token).to receive(:valid?).and_return(true)
+      end
+
+      it 'retries with a freshly generated token' do
+        allow(Devise::Api::Token).to receive(:generate_uniq_access_token)
+          .and_return(existing_token.access_token, SecureRandom.hex(32))
+
+        expect(result).to be_success
+        expect(result.success).to be_persisted
+        expect(result.success.access_token).not_to eq(existing_token.access_token)
+      end
+
+      it 'gives up and raises after exhausting the retries' do
+        allow(Devise::Api::Token).to receive(:generate_uniq_access_token).and_return(existing_token.access_token)
+
+        expect { result }.to raise_error(ActiveRecord::RecordNotUnique)
+        expect(Devise::Api::Token).to have_received(:generate_uniq_access_token)
+          .exactly(described_class::MAX_TOKEN_GENERATION_ATTEMPTS).times
+      end
+    end
+
     context 'when the token cannot be saved' do
       let(:resource_owner) { create(:user) }
 

@@ -9,13 +9,20 @@ module Devise
 
         def call
           resource = resource_class.find_for_authentication(params.slice(*resource_class.authentication_keys))
-          return Failure(error: :invalid_email, record: nil) if resource.blank?
+          return Failure(error: resource_not_found_error, record: nil) if resource.blank?
           return Failure(error: :invalid_authentication, record: resource) unless authenticate!(resource)
 
           Success(resource)
         end
 
         private
+
+        def resource_not_found_error
+          return :invalid_authentication if Devise.api.config.paranoid
+          return :invalid_email if resource_class.authentication_keys.map(&:to_sym).include?(:email)
+
+          :invalid_login
+        end
 
         def authenticate!(resource)
           resource.valid_for_authentication? do

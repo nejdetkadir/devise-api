@@ -18,6 +18,7 @@ module Devise
         setting :expires_in, default: 1.week, reader: true
         setting :generator, default: proc { |_resource_owner| ::Devise.friendly_token(60) }, reader: true
         setting :expires_in_infinite, default: proc { |_resource_owner| false }, reader: true
+        setting :rotation_enabled, default: false, reader: true
       end
 
       setting :sign_up, reader: true do
@@ -31,6 +32,12 @@ module Devise
         setting :location, default: :both, reader: true # :header or :params or :both
         setting :params_key, default: 'access_token', reader: true
       end
+
+      setting :error_response, reader: true do
+        setting :verbose_account_state, default: true, reader: true
+      end
+
+      setting :paranoid, default: false, reader: true
 
       setting :base_token_model, default: 'Devise::Api::Token', reader: true
       setting :base_controller, default: '::DeviseController', reader: true

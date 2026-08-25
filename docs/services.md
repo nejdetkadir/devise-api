@@ -34,7 +34,7 @@ graph LR
 ### `Authenticate`
 - **Inputs:** `params: Types::Hash`, `resource_class: Types::Class`
 - **Logic:** `find_for_authentication(params.slice(*authentication_keys))` → `valid_for_authentication? { valid_password? }` (increments `failed_attempts` for lockable) → `active_for_authentication?` (fails for locked/unconfirmed).
-- **Success:** the resource owner. **Failures:** `:invalid_email` (no record), `:invalid_authentication` (record attached).
+- **Success:** the resource owner. **Failures:** no record → `:invalid_email` when `:email` is an authentication key, `:invalid_login` otherwise, or `:invalid_authentication` when `paranoid` is enabled (all with `record: nil`); wrong password / inactive account → `:invalid_authentication` (record attached).
 
 ### `SignIn`
 - **Inputs:** `params`, `resource_class`
@@ -50,17 +50,17 @@ graph LR
 
 ### `Create`
 - **Inputs:** `resource_owner` (untyped), `previous_refresh_token: String | Nil = nil`
-- **Logic:** guards `resource_owner.respond_to?(:access_tokens)` → builds row with generated unique access/refresh tokens, `expires_in` snapshot from config, `previous_refresh_token` passthrough.
+- **Logic:** guards `resource_owner.respond_to?(:access_tokens)` → builds row with generated unique access/refresh tokens, `expires_in` snapshot from config, `previous_refresh_token` passthrough. Rescues `ActiveRecord::RecordNotUnique` from the unique token indexes and retries with freshly generated tokens (`MAX_TOKEN_GENERATION_ATTEMPTS = 3`), then re-raises.
 - **Success:** the token. **Failures:** `:invalid_resource_owner`, `:devise_api_token_create_error`.
 
 ### `Refresh`
 - **Inputs:** `devise_api_token` (typed `Types.Instance(<base_token_model>)` — resolved at class load), `resource_owner` (defaults to the token's owner)
-- **Logic:** reject if `refresh_token_expired?` → `Create` with `previous_refresh_token` set. Does **not** revoke the old token.
+- **Logic:** reject if `refresh_token_expired?` → `Create` with `previous_refresh_token` set. With `refresh_token.rotation_enabled`, the new token is minted and the presented token revoked in one transaction (a `Create` failure rolls back and leaves the presented token untouched); otherwise the old token is **not** revoked.
 - **Failures:** `:expired_refresh_token` or propagated.
 
 ### `Revoke`
 - **Inputs:** `devise_api_token` (optional — may be `nil`)
-- **Logic:** blank token → `Success(nil)`; already revoked/expired → `Success(token)` (idempotent); else stamp `revoked_at = Time.zone.now`.
+- **Logic:** blank token → `Success(nil)`; already revoked/expired → `Success(token)` (idempotent); else stamp `revoked_at = Time.current`.
 - **Failures:** `:devise_api_token_revoke_error`.
 
 ## Conventions for new services
@@ -69,4 +69,4 @@ graph LR
 2. Return `Success(value)` / `Failure(error: :symbol, record: model_or_nil)` — never raise for expected outcomes.
 3. New error symbols require: `ERROR_TYPES` entry, status mapping in `ErrorResponse#status`, locale string, api-reference row.
 4. Compose via do-notation (`yield`), not manual `if service.success?` nesting.
-5. Cover behavior with request specs (service unit specs are currently placeholders — improving this is a known gap).
+5. Cover behavior with both request specs and service unit specs asserting the monad contract (see `spec/services/**`).

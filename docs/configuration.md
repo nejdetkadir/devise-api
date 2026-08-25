@@ -29,6 +29,7 @@ Settings are read **at use time**, never cached at boot — changing them (e.g. 
 | `expires_in` | `1.week` | Duration | `Token#refresh_token_expired?` — computed from `created_at`, **not stored per-row** (a config change retroactively affects existing tokens) |
 | `expires_in_infinite` | `proc { \|owner\| false }` | proc → bool | `Token#refresh_token_expired?` |
 | `generator` | `proc { \|owner\| Devise.friendly_token(60) }` | proc → String | `Token.generate_uniq_refresh_token` |
+| `rotation_enabled` | `false` | bool | `TokensService::Refresh` (revokes the presented token in the same transaction as minting the new one) and the `refresh` action's reuse detection (a rotated/revoked refresh token presented again triggers `Token#revoke_family!`) |
 
 ## `sign_up`
 
@@ -36,6 +37,18 @@ Settings are read **at use time**, never cached at boot — changing them (e.g. 
 |---|---|---|
 | `enabled` | `true` | `sign_up` action gate (→ `sign_up_disabled` error) |
 | `extra_fields` | `[]` | permitted sign-up params **and** extra keys in the `resource_owner` response object (both directions!) |
+
+## `error_response`
+
+| Setting | Default | Consumed by |
+|---|---|---|
+| `verbose_account_state` | `true` | `ErrorResponse` — when `false`, the `lockable`/`confirmable` metadata blocks are omitted from error bodies (the locked/unconfirmed `error_description` specialization is kept) |
+
+## `paranoid`
+
+| Setting | Default | Consumed by |
+|---|---|---|
+| `paranoid` | `false` | `Authenticate` (unknown account returns `invalid_authentication` instead of `invalid_email`/`invalid_login`) and `ErrorResponse` (always the generic description, never lockable/confirmable details). Mirrors Devise's `config.paranoid`: makes existent and non-existent accounts indistinguishable to callers. |
 
 ## `authorization`
 

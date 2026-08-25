@@ -94,6 +94,83 @@ RSpec.describe Devise::Api::Token do
     end
   end
 
+  describe '#revoke!' do
+    context 'when the token is not revoked' do
+      let(:devise_api_token) { create(:devise_api_token) }
+
+      it 'stamps revoked_at' do
+        expect(devise_api_token.revoke!).to eq devise_api_token
+        expect(devise_api_token.reload.revoked?).to eq true
+      end
+    end
+
+    context 'when the token is already revoked' do
+      let(:devise_api_token) { create(:devise_api_token, :revoked) }
+
+      it 'keeps the original revoked_at' do
+        original_revoked_at = devise_api_token.revoked_at
+
+        devise_api_token.revoke!
+
+        expect(devise_api_token.reload.revoked_at).to be_within(1.second).of(original_revoked_at)
+      end
+    end
+  end
+
+  describe '#revoke_family!' do
+    let(:user) { create(:user) }
+    let!(:root_token) { create(:devise_api_token, resource_owner: user) }
+    let!(:middle_token) do
+      create(:devise_api_token, resource_owner: user, previous_refresh_token: root_token.refresh_token)
+    end
+    let!(:leaf_token) do
+      create(:devise_api_token, resource_owner: user, previous_refresh_token: middle_token.refresh_token)
+    end
+    let!(:unrelated_token) { create(:devise_api_token, resource_owner: user) }
+
+    it 'revokes the whole refresh chain from any member' do
+      middle_token.revoke_family!
+
+      expect(root_token.reload.revoked?).to eq true
+      expect(middle_token.reload.revoked?).to eq true
+      expect(leaf_token.reload.revoked?).to eq true
+    end
+
+    it 'does not touch tokens outside the family' do
+      middle_token.revoke_family!
+
+      expect(unrelated_token.reload.revoked?).to eq false
+    end
+  end
+
+  describe 'database uniqueness of token secrets' do
+    let(:devise_api_token) { create(:devise_api_token) }
+
+    it 'rejects a duplicate access token even when validations are bypassed' do
+      duplicate = build(:devise_api_token, resource_owner: devise_api_token.resource_owner,
+                                           access_token: devise_api_token.access_token)
+
+      expect { duplicate.save(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it 'rejects a duplicate refresh token even when validations are bypassed' do
+      duplicate = build(:devise_api_token, resource_owner: devise_api_token.resource_owner,
+                                           refresh_token: devise_api_token.refresh_token)
+
+      expect { duplicate.save(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+  end
+
+  describe 'secret redaction' do
+    let(:devise_api_token) { create(:devise_api_token) }
+
+    it 'filters token secrets out of #inspect' do
+      expect(devise_api_token.inspect).to include('[FILTERED]')
+      expect(devise_api_token.inspect).not_to include(devise_api_token.access_token)
+      expect(devise_api_token.inspect).not_to include(devise_api_token.refresh_token)
+    end
+  end
+
   describe '.generate_uniq_access_token' do
     context 'when the first generated token is already taken' do
       let(:user) { create(:user) }

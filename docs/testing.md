@@ -45,12 +45,15 @@ Note the traits work by **backdating `created_at`** because all expiry math deri
 | Endpoints for a bare model (no trackable/lockable/confirmable) | `spec/requests/admin_user_tokens_spec.rb` | ✅ |
 | `authenticate_devise_api_token!` on a host controller | `spec/requests/authentication_spec.rb` (via dummy `HomeController`) | ✅ |
 | Non-default config (disabled sign_up/refresh, extra_fields, `:header`/`:params`-only location, revoke failure) | `spec/requests/configuration_overrides_spec.rb` | ✅ |
+| Refresh-token rotation + family-revocation reuse detection (`rotation_enabled`) | `spec/requests/refresh_token_rotation_spec.rb` | ✅ |
+| Enumeration hardening (`paranoid`, `error_response.verbose_account_state`) | `spec/requests/paranoid_mode_spec.rb` | ✅ |
+| Engine initializer (`filter_parameters`) | `spec/devise/api/engine_spec.rb` | ✅ |
 | Default + customized routes (`controllers:`, `path:`, `path_names:` overrides) | `spec/routing/*.rb` | ✅ |
 | Config defaults + overrides on fresh instances | `spec/devise/api/configuration_spec.rb` | ✅ |
 | Response classes (incl. locked/unconfirmed/bare-model variants, disabled refresh, extra_fields) | `spec/devise/api/responses/*_spec.rb` | ✅ |
 | **Service objects** (monad contract: `Success`/`Failure` per branch) | `spec/services/**` | ✅ |
-| Token model (`active?`, expiry incl. `expires_in_infinite`, generator collision retry, conditional validations) | `spec/devise/api/token_spec.rb` | ✅ |
-| Controller helpers (extraction rescue, invalid location `ArgumentError`, unmemoized refresh-token lookup) | `spec/devise/api/controllers/helpers_spec.rb` | ✅ |
+| Token model (`active?`, expiry incl. `expires_in_infinite`, generator collision retry, conditional validations, `revoke!`/`revoke_family!`, unique-index backstop, `#inspect` redaction) | `spec/devise/api/token_spec.rb` | ✅ |
+| Controller helpers (extraction rescue, invalid location `ArgumentError`, memoized refresh-token lookup) | `spec/devise/api/controllers/helpers_spec.rb` | ✅ |
 | Generator (migration template, locale copy) | `spec/devise/api/generators/install_generator_spec.rb` | ✅ |
 
 ## Conventions for new specs

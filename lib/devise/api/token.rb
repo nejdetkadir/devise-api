@@ -7,6 +7,10 @@ module Devise
     class Token < ::ActiveRecord::Base
       self.table_name = 'devise_api_tokens'
 
+      # Redact raw token secrets from #inspect / pretty_print output (see also the
+      # devise.api.filter_parameters engine initializer for request-log filtering)
+      self.filter_attributes += %i[access_token refresh_token previous_refresh_token]
+
       # associations
       belongs_to :resource_owner,
                  polymorphic: true,
@@ -36,6 +40,21 @@ module Devise
         revoked_at.present?
       end
 
+      def revoke!
+        return self if revoked?
+
+        update!(revoked_at: Time.current)
+        self
+      end
+
+      # Revokes every token in this token's refresh chain (ancestors and descendants). Used for
+      # refresh-token reuse detection when refresh_token.rotation_enabled is on.
+      def revoke_family!
+        transaction do
+          family_tokens.each(&:revoke!)
+        end
+      end
+
       def active?
         !inactive?
       end
@@ -47,13 +66,13 @@ module Devise
       def expired?
         return false if Devise.api.config.access_token.expires_in_infinite.call(resource_owner)
 
-        !!(expires_in && Time.now.utc > expires_at)
+        !!(expires_in && Time.current > expires_at)
       end
 
       def refresh_token_expired?
         return false if Devise.api.config.refresh_token.expires_in_infinite.call(resource_owner)
 
-        Time.now.utc > refresh_token_expires_at
+        Time.current > refresh_token_expires_at
       end
 
       def self.generate_uniq_access_token(resource_owner)
@@ -82,6 +101,19 @@ module Devise
 
       def refresh_token_expires_at
         created_at + Devise.api.config.refresh_token.expires_in.seconds
+      end
+
+      def family_tokens
+        root = self
+        root = root.previous_refresh while root.previous_refresh.present?
+
+        tokens = []
+        queue = [root]
+        while (token = queue.shift)
+          tokens << token
+          queue.concat(token.refreshes.to_a)
+        end
+        tokens
       end
     end
   end

@@ -1,6 +1,6 @@
 # Security Review
 
-Static review of the codebase as of `main` @ `bd49310` (v0.2.0, 2026-08). This is the working document for the planned "security hardening" milestone: each finding has an ID, severity, and remediation sketch. When a finding is fixed, move it to the *Resolved* section with the PR reference.
+Static review of the codebase as of `main` @ `bd49310` (v0.2.0, 2026-08), updated after the 2026-08 hardening pass. This is the working document for the "security hardening" milestone: each finding has an ID, severity, and remediation sketch. When a finding is fixed, move it to the *Resolved* section with the PR reference.
 
 Severity scale: **High** = practical account/session compromise under a realistic threat model; **Medium** = meaningful weakening of the security posture; **Low** = defense-in-depth / hardening; **Info** = document-and-accept candidates.
 
@@ -11,39 +11,21 @@ Severity scale: **High** = practical account/session compromise under a realisti
 
 **Remediation:** store a digest (e.g. `SHA256`) and look up by digest; return the raw token only once at creation. Needs a migration path (dual-read window or forced re-login) and is a breaking change for host apps that query tokens directly — consider a `hash_token_secrets` config flag defaulting on in the next minor. This also resolves SEC-6.
 
-### SEC-2 · Medium · No refresh-token rotation invalidation or reuse detection
-`TokensService::Refresh` mints a new token but leaves the presented refresh token fully usable until its own TTL (`docs/data-model.md#refresh-semantics-important`). A stolen refresh token can be replayed repeatedly, in parallel with the legitimate client, with no signal. The `previous_refresh_token` chain already stores exactly the data needed for reuse detection but nothing consumes it.
-
-**Remediation (OAuth2 Security BCP pattern):** on refresh, revoke the presented token row; on presentation of an already-used refresh token (a row that has `refreshes.any?` or is revoked-by-rotation), revoke the whole chain ("token family") and force re-authentication. Could ship behind `refresh_token.rotation_enabled` for backward compatibility.
+**Partial mitigation shipped (2026-08):** token values are now filtered from request logs (`filter_parameters` via the engine initializer) and from `Token#inspect` (`filter_attributes`), addressing GH-51. Raw SQL logging can still print values; digest storage remains the real fix.
 
 ### SEC-3 · Medium · Tokens accepted in URL params by default
 `authorization.location` defaults to `:both`, and `info` is a GET route — so `GET /users/tokens/info?access_token=…` is a documented usage. Query-string tokens end up in server/proxy/CDN access logs, browser history, and potentially `Referer` headers.
 
-**Remediation:** change the default to `:header` (breaking-ish; needs changelog callout), or at minimum document the risk prominently and exclude the params path from examples. Keep `:params`/`:both` as opt-in.
-
-### SEC-4 · Low · Token uniqueness not enforced by the database
-The migration template indexes `access_token` / `refresh_token` but **not uniquely**; uniqueness relies on an AR validation plus a check-then-insert loop (`generate_uniq_*`), which races under concurrency. A duplicate token would make `find_by(access_token:)` return an arbitrary row — i.e. one user's token could resolve to another user's session in the pathological case.
-
-**Remediation:** `unique: true` on both indexes (new migration for existing installs + template change), rescue `ActiveRecord::RecordNotUnique` with a regenerate-and-retry in `TokensService::Create`.
-
-### SEC-5 · Low · Account enumeration via differentiated errors
-`Authenticate` returns `:invalid_email` (400, "Email is invalid") when no account exists vs `:invalid_authentication` (401) when the password is wrong — a clean oracle for enumerating registered emails. Sign-up validation errors ("Email has already been taken") enumerate too.
-
-**Remediation:** optionally collapse both to `invalid_authentication` behind a `paranoid`-style config flag (mirror Devise's `config.paranoid`), defaulting off to preserve current API behavior.
+**Remediation:** change the default to `:header` (breaking; needs a major-version changelog callout). **Interim (shipped 2026-08):** the README "Security recommendations" section now tells host apps to set `api.authorization.location = :header`, and token params are filtered from request logs. `:params`/`:both` remain opt-in-by-default until the next breaking release.
 
 ### SEC-6 · Low · Token lookup is not constant-time
 `find_by(access_token: token)` compares via DB index. With 60-char `friendly_token` entropy the timing side channel is not practically exploitable, noted for completeness. Hashing tokens (SEC-1) makes this moot.
 
-### SEC-7 · Low · Lockable error payload aids brute-force pacing
-`ErrorResponse#devise_lockable_info` exposes `max_attempts`, `failed_attemps` (sic), `locked_at`, `unlock_at` to the unauthenticated caller — an attacker learns exactly how many guesses remain and when to resume.
-
-**Remediation:** gate the lockable/confirmable detail blocks behind a config flag (e.g. `error_response.verbose_account_state`, default true for compatibility, recommended false).
-
 ### SEC-8 · Info · No rate limiting
-The gem relies entirely on Devise `lockable` (if enabled) to slow credential stuffing; `sign_in`/`sign_up`/`refresh` are otherwise unthrottled. Out of scope to implement in-gem, but the README/docs should recommend `rack-attack` (or equivalent) on the token endpoints.
+The gem relies entirely on Devise `lockable` (if enabled) to slow credential stuffing; `sign_in`/`sign_up`/`refresh` are otherwise unthrottled. Out of scope to implement in-gem. The README "Security recommendations" section now recommends `rack-attack` (or equivalent) on the token endpoints; keeping open as Info in case in-gem throttling hooks are ever wanted.
 
 ### SEC-9 · Info · `sign_up.extra_fields` is a mass-assignment and disclosure lever
-Fields listed there are both *writable at sign-up* and *echoed in every token/info response* (`TokenResponse#default_resource_owner`). A host app adding `:role` or `:admin` here creates a privilege-escalation hole. Needs a loud documentation warning (config docs + README).
+Fields listed there are both *writable at sign-up* and *echoed in every token/info response* (`TokenResponse#default_resource_owner`). A host app adding `:role` or `:admin` here creates a privilege-escalation hole. Warnings shipped 2026-08 in the README (config example + "Security recommendations"); keeping open as Info because the sharp edge itself remains.
 
 ### SEC-10 · Info · Deliberate CSRF skip
 `skip_before_action :verify_authenticity_token` is correct for bearer-token endpoints; note that accepting tokens from params (`SEC-3`) is what keeps CSRF relevant — cookie-less bearer auth in the header is not CSRF-able.
@@ -58,4 +40,14 @@ Fields listed there are both *writable at sign-up* and *echoed in every token/in
 
 ## Resolved
 
-*(empty — move findings here with PR links as they land)*
+### SEC-2 · Medium · No refresh-token rotation invalidation or reuse detection — *resolved 2026-08 (opt-in)*
+`TokensService::Refresh` minted a new token but left the presented refresh token fully usable until its own TTL. Fixed with the OAuth2 Security BCP pattern behind `refresh_token.rotation_enabled` (default `false` for backward compatibility): each refresh revokes the presented token (same transaction as the mint), and presenting a rotated/revoked refresh token again revokes the whole token family (`Token#revoke_family!`) and returns `revoked_token`. Recommended `true` in the README; consider defaulting on at the next breaking release. Covered by `spec/requests/refresh_token_rotation_spec.rb` and `spec/services/tokens_service/refresh_spec.rb`.
+
+### SEC-4 · Low · Token uniqueness not enforced by the database — *resolved 2026-08*
+The migration template now creates `unique: true` indexes on `access_token` and `refresh_token` (existing installs: add the migration listed in the CHANGELOG), and `TokensService::Create` rescues `ActiveRecord::RecordNotUnique` with a regenerate-and-retry (3 attempts). Covered by `spec/devise/api/token_spec.rb` ("database uniqueness") and `spec/services/tokens_service/create_spec.rb`.
+
+### SEC-5 · Low · Account enumeration via differentiated errors — *resolved 2026-08 (opt-in)*
+`paranoid` config flag (default `false`, mirroring Devise's `config.paranoid`): unknown accounts, wrong passwords, and locked/unconfirmed accounts all return the same generic `invalid_authentication` (401) with no lockable/confirmable details. Covered by `spec/requests/paranoid_mode_spec.rb`.
+
+### SEC-7 · Low · Lockable error payload aids brute-force pacing — *resolved 2026-08 (opt-in)*
+`error_response.verbose_account_state` config flag (default `true` for compatibility, recommended `false`): when disabled, the `lockable`/`confirmable` metadata blocks (`max_attempts`, `failed_attempts`, `locked_at`, `unlock_at`, …) are omitted from error responses. `paranoid` implies it. Covered by `spec/requests/paranoid_mode_spec.rb`.

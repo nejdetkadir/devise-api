@@ -19,6 +19,36 @@ RSpec.describe Devise::Api::ResourceOwnerService::Authenticate do
       end
     end
 
+    context 'when no resource owner matches non-email authentication keys' do
+      let(:params) { { name: 'unknown', password: 'pass123456' } }
+
+      before do
+        allow(User).to receive(:authentication_keys).and_return([:name])
+      end
+
+      it 'returns a generic invalid login failure instead of invalid email' do
+        expect(result).to be_failure
+        expect(result.failure).to eq(error: :invalid_login, record: nil)
+      end
+    end
+
+    context 'when paranoid mode is enabled and no resource owner matches' do
+      let(:params) { { email: 'unknown@development.com', password: 'pass123456' } }
+
+      around do |example|
+        original = Devise.api.config.paranoid
+        Devise.api.config.paranoid = true
+        example.run
+      ensure
+        Devise.api.config.paranoid = original
+      end
+
+      it 'returns the same failure as a wrong password' do
+        expect(result).to be_failure
+        expect(result.failure).to eq(error: :invalid_authentication, record: nil)
+      end
+    end
+
     context 'when the password is wrong' do
       let(:user) { create(:user) }
       let(:params) { { email: user.email, password: 'wrong password' } }
