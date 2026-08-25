@@ -1,188 +1,213 @@
+# devise-api
+
+Token-based API authentication for [Devise](https://github.com/heartcombo/devise). Opaque access + refresh tokens, one `devise :api` module, zero Warden strategies to write.
+
 [![Gem Version](https://badge.fury.io/rb/devise-api.svg)](https://badge.fury.io/rb/devise-api)
 ![test](https://github.com/nejdetkadir/devise-api/actions/workflows/test.yml/badge.svg?branch=main)
 ![rubocop](https://github.com/nejdetkadir/devise-api/actions/workflows/rubocop.yml/badge.svg?branch=main)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-rubocop-brightgreen.svg)](https://github.com/rubocop/rubocop)
 ![Ruby Version](https://img.shields.io/badge/ruby_version->=_2.7.0-blue.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-# Devise API
-The devise-api gem is a convenient way to add authentication to your Ruby on Rails application using the devise gem. It provides support for access tokens and refresh tokens, which allow you to authenticate API requests and keep the user's session active for a longer period of time on the client side. It can be installed by adding the gem to your Gemfile, running migrations, and adding the :api module to your devise model. The gem is fully configurable, allowing you to set things like token expiration times and token generators.
+`devise-api` is a Rails engine that plugs into Devise's own extension mechanism. Add `:api` to your Devise model and you get sign-up, sign-in, token refresh, revocation, and an authenticated info endpoint — plus controller helpers (`authenticate_devise_api_token!`, `current_devise_api_user`) for protecting the rest of your API.
 
-Here's how it works:
+**Highlights**
 
-- When a user logs in to your Rails application, the `devise-api` gem generates an access token and a refresh token.
-- The access token is included in the API request headers and is used to authenticate the user on each subsequent request.
-- The refresh token is stored on the client side (e.g. in a browser cookie or on a mobile device) and is used to obtain a new access token when the original access token expires.
-- This allows the user to remain logged in and make API requests without having to constantly re-enter their login credentials.
+- 🔑 **Opaque access + refresh tokens** stored in your database — revocable at any time, no JWT invalidation headaches
+- 🔁 **Refresh token rotation** with reuse detection (a replayed rotated token revokes the whole token family)
+- 🧩 **Plays well with Devise modules** — `lockable`, `confirmable`, `trackable` are detected and honored automatically
+- ⚙️ **Fully configurable** — token TTLs and generators, paranoid mode, header/params extraction, per-action callbacks, and swappable base classes for the token model and controller
+- 🧱 **Service objects built on dry-monads** — every endpoint delegates to a composable, overridable service
+- 📚 **Documented for humans and AI agents** — [`docs/`](docs/README.md) holds contractual architecture, API, and configuration references
 
-Overall, the `devise-api` gem is a useful tool for adding secure authentication to your Ruby on Rails application.
+## Table of contents
 
-## Installation
+- [How it works](#how-it-works)
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [Endpoints](#endpoints)
+- [Protecting your own endpoints](#protecting-your-own-endpoints)
+- [Response payloads](#response-payloads)
+- [Configuration](#configuration)
+- [Security checklist](#security-checklist)
+- [Devise module compatibility](#devise-module-compatibility)
+- [Customization](#customization)
+- [Documentation](#documentation)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
-Install the gem and add to the application's Gemfile by executing:
-```bash
-$ bundle add devise-api
+## How it works
+
+A client signs in once, then uses a short-lived access token per request and a longer-lived refresh token to get new access tokens without re-sending credentials:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant API as Your Rails API
+    participant DB as devise_api_tokens
+
+    Client->>API: POST /users/tokens/sign_in (email + password)
+    API->>DB: create token pair
+    API-->>Client: 200 { token, refresh_token, expires_in, resource_owner }
+
+    loop While access token is valid
+        Client->>API: GET /your/endpoints (Authorization: Bearer <access token>)
+        API-->>Client: 200 your data
+    end
+
+    Client->>API: GET /your/endpoints (expired access token)
+    API-->>Client: 401 { "error": "expired_token" }
+
+    Client->>API: POST /users/tokens/refresh (Authorization: Bearer <refresh token>)
+    API->>DB: mint new pair (rotation: revoke presented token)
+    API-->>Client: 200 { token, refresh_token, ... }
+
+    Client->>API: POST /users/tokens/revoke (Authorization: Bearer <access token>)
+    API->>DB: mark revoked
+    API-->>Client: 204 No Content
 ```
 
-Or add the following line to the application's Gemfile:
+Tokens are opaque random strings (`Devise.friendly_token` by default) persisted in a `devise_api_tokens` table with a polymorphic `resource_owner`, so one table serves any number of Devise scopes (`User`, `Customer`, …). A token is **active** only while it is neither expired nor revoked:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active: sign_up / sign_in / refresh
+    Active --> Expired: access_token.expires_in elapses
+    Active --> Revoked: POST /tokens/revoke
+    Active --> Revoked: rotation on refresh
+    Expired --> [*]: refresh (mints a new pair)
+    Revoked --> [*]
+    note right of Revoked
+        Reuse detection: presenting a rotated
+        refresh token again revokes the
+        entire token family
+    end note
+```
+
+For the full component map and request lifecycle diagrams, see [docs/architecture.md](docs/architecture.md).
+
+## Requirements
+
+| Dependency | Version |
+|---|---|
+| Ruby | >= 2.7 |
+| Rails | >= 6.0 |
+| Devise | >= 4.7.2 |
+
+## Quick start
+
+**1. Install the gem**
+
+```bash
+bundle add devise-api
+```
+
+Or track `main` from your Gemfile:
+
 ```ruby
 gem 'devise-api', github: 'nejdetkadir/devise-api', branch: 'main'
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+**2. Generate the migration and locales**
+
 ```bash
-gem install devise-api
+rails generate devise_api:install
+rails db:migrate
 ```
 
-After that, you need to generate relevant migrations and locales by executing:
-```bash
-$ rails generate devise_api:install
-```
+This copies a migration for the `devise_api_tokens` table and the locale file `config/locales/devise_api.en.yml` into your app.
 
-This will introduce two changes:
-- Locale files in `config/locales/devise_api.en.yml`
-- Migration file in `db/migrate` to create devise api tokens table
+**3. Add the `:api` module to your Devise model**
 
-Now you're ready to run the migrations:
-```bash
-$ rails db:migrate
-```
-
-Finally, you need to add `:api` module to your devise model. For example:
 ```ruby
 class User < ApplicationRecord
-  devise :database_authenticatable, 
-         :registerable, 
+  devise :database_authenticatable,
+         :registerable,
          :recoverable,
          :rememberable,
          :validatable,
-         :api # <--- Add this module
+         :api # <--- add this
 end
 ```
 
-Your user model is now ready to use `devise-api` gem. It will draw routes for token authenticatable and token refreshable.
+That's it — your existing `devise_for :users` in `config/routes.rb` now draws the token endpoints automatically.
 
-| Prefix | Verb | URI Pattern | Controller#Action        |
-|--------|------|------------|--------------------------|
-| revoke_user_tokens | POST | /users/tokens/revoke | devise/api/tokens#revoke |
-| refresh_user_tokens | POST | /users/tokens/refresh | devise/api/tokens#refresh |
-| sign_up_user_tokens | POST | /users/tokens/sign_up | devise/api/tokens#sign_up |
-| sign_in_user_tokens | POST | /users/tokens/sign_in | devise/api/tokens#sign_in |
-| info_user_tokens | GET | /users/tokens/info | devise/api/tokens#info |
+**4. Try it**
 
-### You can look up the [example requests](#example-api-requests).
-
-## Configuration
-
-`devise-api` is a full configurable gem. You can configure it to your needs. Here is a basic usage example:
-
-```ruby
-# config/initializers/devise.rb
-Devise.setup do |config|
-  config.api.configure do |api|
-    # Access Token
-    api.access_token.expires_in = 1.hour
-    api.access_token.expires_in_infinite = ->(_resource_owner) { false }
-    api.access_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
-
-
-    # Refresh Token
-    api.refresh_token.enabled = true
-    api.refresh_token.expires_in = 1.week
-    api.refresh_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
-    api.refresh_token.expires_in_infinite = ->(_resource_owner) { false }
-    api.refresh_token.rotation_enabled = false # when true, each refresh revokes the presented refresh token and a replayed one revokes the whole token family (recommended)
-
-    # Sign up
-    api.sign_up.enabled = true
-    api.sign_up.extra_fields = [] # WARNING: listed fields are writable at sign up AND echoed in token/info responses - never list privileged fields like :role or :admin
-
-    # Error responses
-    api.error_response.verbose_account_state = true # when false, lockable/confirmable details are omitted from error responses
-    api.paranoid = false # when true, unknown accounts and wrong passwords return the same generic invalid_authentication error (prevents account enumeration)
-
-    # Authorization
-    api.authorization.key = 'Authorization'
-    api.authorization.scheme = 'Bearer'
-    api.authorization.location = :both # :header or :params or :both
-    api.authorization.params_key = 'access_token'
-
-
-    # Base classes
-    api.base_token_model = 'Devise::Api::Token'
-    api.base_controller = '::DeviseController'
-
-
-    # After successful callbacks
-    api.after_successful_sign_in = ->(_resource_owner, _token, _request) { }
-    api.after_successful_sign_up = ->(_resource_owner, _token, _request) { }
-    api.after_successful_refresh = ->(_resource_owner, _token, _request) { }
-    api.after_successful_revoke = ->(_resource_owner, _token, _request) { }
-
-
-    # Before callbacks
-    api.before_sign_in = ->(_params, _request, _resource_class) { }
-    api.before_sign_up = ->(_params, _request, _resource_class) { }
-    api.before_refresh = ->(_token_model, _request) { }
-    api.before_revoke = ->(_token_model, _request) { }
-  end
-end
+```bash
+curl -X POST http://localhost:3000/users/tokens/sign_in \
+  -H 'Content-Type: application/json' \
+  -d '{ "email": "test@example.com", "password": "123456" }'
 ```
 
-## Routes
+```json
+{
+  "token": "ACCESS_TOKEN",
+  "refresh_token": "REFRESH_TOKEN",
+  "expires_in": 3600,
+  "token_type": "Bearer",
+  "resource_owner": { "id": 1, "email": "test@example.com", "created_at": "...", "updated_at": "..." }
+}
+```
 
-You can configure the tokens routes with the original `devise_for` method. For example:
+## Endpoints
+
+Drawn under `/<scope>/tokens` for every Devise scope whose model includes `:api` (examples use `devise_for :users`):
+
+| Verb | Path | Purpose | Auth |
+|---|---|---|---|
+| `POST` | `/users/tokens/sign_up` | Register and get a token pair | — |
+| `POST` | `/users/tokens/sign_in` | Authenticate and get a token pair | — |
+| `POST` | `/users/tokens/refresh` | Exchange a refresh token for a new pair | refresh token |
+| `POST` | `/users/tokens/revoke` | Revoke the presented token | access token |
+| `GET` | `/users/tokens/info` | Current resource owner details | access token |
+
+All tokens — including the refresh token for `/refresh` — travel in the same slot: the `Authorization: Bearer <token>` header and/or an `access_token` param, depending on `authorization.location` (see [Configuration](#configuration)).
+
+```bash
+# Sign up
+curl -X POST http://localhost:3000/users/tokens/sign_up \
+  -H 'Content-Type: application/json' \
+  -d '{ "email": "test@example.com", "password": "123456" }'
+
+# Refresh (note: the REFRESH token goes in the Authorization header)
+curl -X POST http://localhost:3000/users/tokens/refresh \
+  -H 'Authorization: Bearer REFRESH_TOKEN'
+
+# Revoke
+curl -X POST http://localhost:3000/users/tokens/revoke \
+  -H 'Authorization: Bearer ACCESS_TOKEN'
+
+# Info
+curl http://localhost:3000/users/tokens/info \
+  -H 'Authorization: Bearer ACCESS_TOKEN'
+```
+
+Route paths and the controller are customizable through the standard `devise_for` options:
+
 ```ruby
 # config/routes.rb
 Rails.application.routes.draw do
-  devise_for :customers, 
-             controllers: { tokens: 'customers/api/tokens' }
+  devise_for :customers, controllers: { tokens: 'customers/api/tokens' }
 end
 ```
 
-## Usage
-`devise-api` module works with `:lockable` and `:confirmable` modules. It also works with `:trackable` module.
+## Protecting your own endpoints
 
-`devise-api` provides a set of controllers and helpers to help you implement authentication in your Rails application. Here's a quick overview of the available controllers and helpers:
+The gem mixes three helpers into **every** controller:
 
-- [Devise::Api::TokensController](https://github.com/nejdetkadir/devise-api/tree/main/app/controllers/devise/api/tokens_controller.rb) - This controller is responsible for generating access tokens and refresh tokens. It also provides actions for refreshing access tokens and revoking refresh tokens.
+| Helper | Returns |
+|---|---|
+| `authenticate_devise_api_token!` | Renders a 401 error response unless a valid, active access token is presented |
+| `current_devise_api_token` | The active `Devise::Api::Token` (or `nil`) |
+| `current_devise_api_user` | The token's resource owner (or `nil`) — works for any scope, despite the name |
 
-- [Devise::Api::Token](https://github.com/nejdetkadir/devise-api/tree/main/lib/devise/api/token.rb) - This model is responsible for storing access tokens and refresh tokens in the database.
-
-- [Devise::Api::Responses::ErrorResponse](https://github.com/nejdetkadir/devise-api/tree/main/lib/devise/api/responses/error_response.rb) - This class is responsible for generating error responses. It also provides a set of error types and helpers to help you implement error responses in your Rails application.
-
-- [Devise::Api::Responses::TokenResponse](https://github.com/nejdetkadir/devise-api/tree/main/lib/devise/api/responses/token_response.rb) - This class is responsible for generating token responses. It also provides actions for generating access tokens and refresh tokens for each action.
-
-## Overriding Responses
-You can prepend your decorators to the response classes to override the default responses. For example:
-```ruby
-# app/lib/devise/api/responses/token_response_decorator.rb
-module Devise::Api::Responses::TokenResponseDecorator
-  def body
-    return default_body.merge({ roles: resource_owner.roles })
-  end
-end
-```
-
-Then you need to load and prepend your decorator to the response class. For example:
-
-```ruby
-# config/initializers/devise.rb
-require 'devise/api/responses/token_response_decorator' # Either do this or autoload the lib directory
-
-Devise.setup do |config|
-end
-
-Devise::Api::Responses::TokenResponse.prepend Devise::Api::Responses::TokenResponseDecorator
-```
-
-## Using helpers
-`devise-api` provides a set of helpers to help you implement authentication in your Rails application. Here's a quick overview of the available helpers:
-
-Example:
 ```ruby
 # app/controllers/api/v1/orders_controller.rb
-class Api::V1::OrdersController < YourBaseController
-  skip_before_action :verify_authenticity_token, raise: false  
+class Api::V1::OrdersController < ApplicationController
+  skip_before_action :verify_authenticity_token, raise: false
   before_action :authenticate_devise_api_token!
 
   def index
@@ -190,21 +215,174 @@ class Api::V1::OrdersController < YourBaseController
   end
 
   def show
-    devise_api_token = current_devise_api_token
-    render json: devise_api_token.resource_owner.orders.find(params[:id]), status: :ok
+    order = current_devise_api_token.resource_owner.orders.find(params[:id])
+    render json: order, status: :ok
   end
 end
 ```
 
-## Using devise base services
-`devise-api` provides a set of base services to help you implement authentication in your Rails application. Here's a quick overview of the available services:
+## Response payloads
 
-- [Devise::Api::BaseService](https://github.com/nejdetkadir/devise-api/tree/main/app/services/devise/api/base_service.rb) - This service is useful for creating and updating resources. It is inherited by the following gems.
-- [dry-monads](https://dry-rb.org/gems/dry-monads)
-- [dry-types](https://dry-rb.org/gems/dry-types)
-- [dry-initializer](https://dry-rb.org/gems/dry-initializer)
+**Success** (`sign_in` 200, `sign_up` 201, `refresh` 200):
 
-You can create a service by inheriting the `Devise::Api::BaseService` class. For example:
+```json
+{
+  "token": "...",
+  "refresh_token": "...",
+  "expires_in": 3600,
+  "token_type": "Bearer",
+  "resource_owner": { "id": 1, "email": "...", "created_at": "...", "updated_at": "..." }
+}
+```
+
+`info` returns just the `resource_owner` object; `revoke` returns `204 No Content`.
+
+**Errors** are consistent JSON with a symbolic type and human-readable descriptions (translated via i18n):
+
+```json
+{
+  "error": "expired_token",
+  "error_description": ["Your token has expired. Please sign in again."]
+}
+```
+
+Common error types: `invalid_authentication` (401), `invalid_token` (401), `expired_token` (401), `revoked_token` (401), `expired_refresh_token` (401), `invalid_refresh_token` (400), `sign_up_disabled` (400), `resource_owner_create_error` (422). The complete catalog — every type, status, and trigger — lives in [docs/api-reference.md](docs/api-reference.md).
+
+## Configuration
+
+Everything is configured on a single global inside `Devise.setup`. All values shown are the defaults:
+
+```ruby
+# config/initializers/devise.rb
+Devise.setup do |config|
+  config.api.configure do |api|
+    # Access token
+    api.access_token.expires_in = 1.hour
+    api.access_token.expires_in_infinite = ->(_resource_owner) { false }
+    api.access_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
+
+    # Refresh token
+    api.refresh_token.enabled = true
+    api.refresh_token.expires_in = 1.week
+    api.refresh_token.expires_in_infinite = ->(_resource_owner) { false }
+    api.refresh_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
+    api.refresh_token.rotation_enabled = false # recommended: true (see Security checklist)
+
+    # Sign up
+    api.sign_up.enabled = true
+    api.sign_up.extra_fields = [] # e.g. %i[first_name last_name] — writable at sign-up AND echoed in responses
+
+    # Error responses
+    api.error_response.verbose_account_state = true # false hides lockable/confirmable details from errors
+    api.paranoid = false # true makes unknown accounts indistinguishable from wrong passwords
+
+    # Token extraction
+    api.authorization.key = 'Authorization'
+    api.authorization.scheme = 'Bearer'
+    api.authorization.location = :both # :header, :params, or :both (params win)
+    api.authorization.params_key = 'access_token'
+
+    # Base classes (string names, constantized lazily — point at your own subclasses)
+    api.base_token_model = 'Devise::Api::Token'
+    api.base_controller = '::DeviseController'
+
+    # Lifecycle hooks (all default to no-ops)
+    api.before_sign_in  = ->(params, request, resource_class) {}
+    api.before_sign_up  = ->(params, request, resource_class) {}
+    api.before_refresh  = ->(token, request) {}
+    api.before_revoke   = ->(token, request) {}
+    api.after_successful_sign_in = ->(resource_owner, token, request) {}
+    api.after_successful_sign_up = ->(resource_owner, token, request) {}
+    api.after_successful_refresh = ->(resource_owner, token, request) {}
+    api.after_successful_revoke  = ->(resource_owner, token, request) {}
+  end
+end
+```
+
+Settings are read at use time (never cached at boot), so changes take effect immediately — handy in tests. The full reference with types, defaults, and exactly which code consumes each setting is in [docs/configuration.md](docs/configuration.md).
+
+## Security checklist
+
+Recommended production settings and guardrails:
+
+- ✅ **Send tokens in the `Authorization` header only.** The default `authorization.location = :both` also accepts tokens as query/body params, and URLs leak into server logs, browser history, and `Referer` headers. Set `api.authorization.location = :header` unless you need params support.
+- ✅ **Enable refresh token rotation** (`api.refresh_token.rotation_enabled = true`). Each refresh then revokes the presented refresh token, and replaying a rotated token revokes the entire token family (reuse detection).
+- ✅ **Enable paranoid mode** (`api.paranoid = true`) to prevent account enumeration — unknown emails and wrong passwords return the same generic `invalid_authentication` error.
+- ✅ **Rate limit the token endpoints.** The gem does not throttle `sign_in`/`sign_up`/`refresh`; put [rack-attack](https://github.com/rack/rack-attack) or an equivalent in front of them. Devise `lockable` only slows per-account brute force.
+- ⚠️ **Audit `sign_up.extra_fields`.** Every listed field is mass-assignable at sign-up **and** echoed in every token/info response — never list privileged fields like `:role` or `:admin`.
+- ⚠️ **Keep token values out of logs.** The gem adds `access_token`, `refresh_token`, and `previous_refresh_token` to `filter_parameters` and filters the token model's `#inspect`, but raw SQL logging (e.g. debug log level in production) can still print token values.
+
+The full threat-model review is in [docs/analysis/security-review.md](docs/analysis/security-review.md).
+
+## Devise module compatibility
+
+`devise-api` feature-detects the other modules on your model and adapts:
+
+| Module | Behavior |
+|---|---|
+| `trackable` | `sign_in`/`sign_up` update the tracked fields (sign-in count, IPs, timestamps) |
+| `lockable` | Failed sign-ins increment `failed_attempts`; lock state is reported in the error payload (unless paranoid/quiet); a successful sign-in resets the counter |
+| `confirmable` | Unconfirmed users can sign **up** (they get tokens plus a `confirmable` notice in the response) but cannot sign **in** until confirmed |
+
+## Customization
+
+### Override the responses
+
+Prepend a decorator module to `TokenResponse` or `ErrorResponse`:
+
+```ruby
+# app/lib/devise/api/responses/token_response_decorator.rb
+module Devise::Api::Responses::TokenResponseDecorator
+  def body
+    default_body.merge({ roles: resource_owner.roles })
+  end
+end
+```
+
+```ruby
+# config/initializers/devise.rb
+require 'devise/api/responses/token_response_decorator'
+
+Devise::Api::Responses::TokenResponse.prepend Devise::Api::Responses::TokenResponseDecorator
+```
+
+### Swap the base classes
+
+`base_token_model` and `base_controller` are stored as class *names* and resolved lazily, so you can subclass without load-order problems:
+
+```ruby
+# app/models/api_token.rb
+class ApiToken < Devise::Api::Token
+  belongs_to :organization, optional: true
+end
+```
+
+```ruby
+# config/initializers/devise.rb
+Devise.setup do |config|
+  config.api.configure do |api|
+    api.base_token_model = 'ApiToken'
+    api.base_controller = 'Api::BaseController'
+  end
+end
+```
+
+### Hook into the lifecycle
+
+The `before_*` / `after_successful_*` callbacks (see [Configuration](#configuration)) are handy for audit logging, analytics, or sending welcome emails:
+
+```ruby
+api.after_successful_sign_up = lambda { |resource_owner, _token, _request|
+  WelcomeMailer.with(user: resource_owner).welcome.deliver_later
+}
+```
+
+`before_*` return values are ignored — raise, or use a `before_action` in a subclassed controller, if you need to halt a request.
+
+### Build your own services
+
+Every endpoint delegates to a service object built on [dry-monads](https://dry-rb.org/gems/dry-monads), [dry-types](https://dry-rb.org/gems/dry-types), and [dry-initializer](https://dry-rb.org/gems/dry-initializer). Inherit from `Devise::Api::BaseService` to compose your own:
+
 ```ruby
 # app/services/devise/api/tokens_service/v2/create.rb
 module Devise::Api::TokensService::V2
@@ -213,94 +391,60 @@ module Devise::Api::TokensService::V2
     option :resource_class, type: Types::Class, reader: true
 
     def call
-      ...
-
+      # ...
       Success(resource)
     end
   end
 end
 ```
 
-Then you can call the service in your controller. For example:
 ```ruby
 # app/controllers/api/v1/tokens_controller.rb
-class Api::V1::TokensController < YourBaseController
-  skip_before_action :verify_authenticity_token, raise: false
+def create
+  result = Devise::Api::TokensService::V2::Create.new(params: params, resource_class: Customer).call
 
-  def create
-    service = Devise::Api::TokensService::V2::Create.new(params: params, resource_class: Customer).call
-    if service.success?
-      render json: service.success, status: :created
-    else
-      render json: service.failure, status: :unprocessable_entity
-    end
+  if result.success?
+    render json: result.success, status: :created
+  else
+    render json: result.failure, status: :unprocessable_entity
   end
 end
 ```
 
-## Example API requests
+Service contracts (inputs, success/failure values, composition) are documented in [docs/services.md](docs/services.md), and all supported customization points in [docs/extending.md](docs/extending.md).
 
-### Sign in
-```curl
-curl --location --request POST 'http://127.0.0.1:3000/users/tokens/sign_in' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "email": "test@development.com",
-    "password": "123456"
-}'
-```
+## Documentation
 
-### Sign up
-```curl
-curl --location --request POST 'http://127.0.0.1:3000/users/tokens/sign_up' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "email": "test@development.com",
-    "password": "123456"
-}'
-```
+The [`docs/`](docs/README.md) directory is the source of truth for how the gem works internally — written for contributors **and** AI coding agents, and kept in sync with the code by convention:
 
-### Refresh token
-```curl
-curl --location --request POST 'http://127.0.0.1:3000/users/tokens/refresh' \
---header 'Authorization: Bearer <refresh_token>'
-```
-
-### Revoke
-```curl
-curl --location --request POST 'http://127.0.0.1:3000/users/tokens/revoke' \
---header 'Authorization: Bearer <access_token>'
-```
-
-### Info
-```curl
-curl --location --request GET 'http://127.0.0.1:3000/users/tokens/info' \
---header 'Authorization: Bearer <access_token>'
-```
-
-## Security recommendations
-
-- **Send tokens in the `Authorization` header.** The default `authorization.location = :both` also accepts tokens as query/body params (e.g. `GET /users/tokens/info?access_token=...`), and URLs end up in server/proxy logs, browser history and `Referer` headers. Set `api.authorization.location = :header` unless you need params support.
-- **Enable refresh token rotation** (`api.refresh_token.rotation_enabled = true`). Without it a refresh token stays valid until it expires, so a stolen one can be replayed. With rotation, every refresh revokes the presented token and replaying a rotated token revokes the whole token family.
-- **Enable paranoid mode** (`api.paranoid = true`) if you don't want attackers to be able to check whether an email address has an account (account enumeration).
-- **Rate limit the token endpoints.** The gem does not throttle `sign_in`/`sign_up`/`refresh`; use [rack-attack](https://github.com/rack/rack-attack) or an equivalent in front of them. Devise `lockable` (if enabled) only slows per-account brute force.
-- **Be careful with `sign_up.extra_fields`.** Every listed field is mass-assignable at sign up and echoed in every token/info response.
-- **Token secrets in logs.** The gem automatically adds `access_token`, `refresh_token` and `previous_refresh_token` to `filter_parameters` and filters them from the token model's `#inspect`, but raw SQL logging (e.g. `log_level = :debug` in production) can still print token values — keep production SQL logging off or filtered.
+| Document | Contents |
+|---|---|
+| [architecture.md](docs/architecture.md) | Component map, boot sequence, request lifecycle (with diagrams) |
+| [api-reference.md](docs/api-reference.md) | Every endpoint, payload, and the full error catalog |
+| [configuration.md](docs/configuration.md) | Every setting: type, default, and where it is consumed |
+| [data-model.md](docs/data-model.md) | `devise_api_tokens` schema, token state machine, refresh chains |
+| [services.md](docs/services.md) | Service-object contracts and composition |
+| [extending.md](docs/extending.md) | Supported customization points |
+| [testing.md](docs/testing.md) / [development.md](docs/development.md) | Test layout, dummy app, CI, release process |
+| [analysis/](docs/analysis/security-review.md) | Security review and vetted known-issues backlog |
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bundle exec rake rspec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```bash
+bin/setup                # install dependencies
+bundle exec rake         # what CI runs: RSpec + RuboCop
+bundle exec rake rspec   # tests only
+bin/console              # interactive prompt
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+Tests run against the dummy Rails app in `spec/dummy`. To install the gem locally run `bundle exec rake install`; to release, bump `version.rb` and run `bundle exec rake release`.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/nejdetkadir/devise-api. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/nejdetkadir/devise-api/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on [GitHub](https://github.com/nejdetkadir/devise-api). Please read [docs/README.md](docs/README.md) for the ground rules (docs are contractual — behavior changes must update the matching document) and check the [known-issues backlog](docs/analysis/known-issues.md) before "fixing" surprising code.
+
+This project is intended to be a safe, welcoming space for collaboration; contributors are expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](LICENSE).
-
-## Code of Conduct
-
-Everyone interacting in the Devise::Api project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/nejdetkadir/devise-api/blob/main/CODE_OF_CONDUCT.md).
