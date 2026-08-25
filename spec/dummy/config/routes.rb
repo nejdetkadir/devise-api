@@ -7,5 +7,6 @@ Rails.application.routes.draw do
   # root "articles#index"
 
   devise_for :users
+  devise_for :admin_users
   get :home, to: 'home#index'
 end

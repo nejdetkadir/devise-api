@@ -334,6 +334,49 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
   end
 
+  context 'with a locked resource owner' do
+    let(:record) { create(:user) }
+    let(:error_response) do
+      described_class.new(nil, error: :invalid_authentication, record: record, resource_class: User)
+    end
+
+    before do
+      record.lock_access!
+    end
+
+    it 'has a body with the locked error description and the unlock information' do
+      expect(error_response.body).to eq(
+        error: :invalid_authentication,
+        error_description: [I18n.t('devise.api.error_response.lockable.locked')],
+        lockable: {
+          locked: true,
+          max_attempts: ::Devise.maximum_attempts,
+          failed_attemps: record.failed_attempts,
+          locked_at: record.locked_at,
+          unlock_at: record.locked_at + ::Devise.unlock_in
+        },
+        confirmable: {
+          confirmed: false,
+          confirmation_sent_at: record.confirmation_sent_at
+        }
+      )
+    end
+  end
+
+  context 'with a resource class without lockable and confirmable' do
+    let(:record) { create(:admin_user) }
+    let(:error_response) do
+      described_class.new(nil, error: :invalid_authentication, record: record, resource_class: AdminUser)
+    end
+
+    it 'has a body without lockable and confirmable info' do
+      expect(error_response.body).to eq(
+        error: :invalid_authentication,
+        error_description: [I18n.t('devise.api.error_response.invalid_authentication')]
+      )
+    end
+  end
+
   context 'with confirmable' do
     let(:record) { double('record', confirmed?: false, confirmation_sent_at: nil) }
     let(:resource_class) { double('resource_class', supported_devise_modules: [:confirmable]) }

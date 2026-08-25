@@ -4,6 +4,20 @@ ENV['RAILS_ENV'] = 'test'
 
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
+# SimpleCov must start before the gem and the dummy app are required so their files are tracked
+require 'simplecov'
+
+SimpleCov.start do
+  enable_coverage :branch
+  add_filter %r{^/spec/}
+  add_filter 'lib/devise/api/version.rb' # loaded by the gemspec before SimpleCov starts
+  track_files '{app,lib}/**/*.rb'
+  add_group 'Controllers', 'app/controllers'
+  add_group 'Services', 'app/services'
+  add_group 'Lib', 'lib'
+  minimum_coverage line: 95 if ENV['CI'] || ENV['ENFORCE_COVERAGE']
+end
+
 require 'devise/api'
 require 'dummy/config/environment'
 require 'pry'

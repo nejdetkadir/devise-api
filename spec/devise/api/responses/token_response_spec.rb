@@ -121,6 +121,93 @@ RSpec.describe Devise::Api::Responses::TokenResponse do
     end
   end
 
+  context 'sign up with an unconfirmed resource owner' do
+    let(:token_response) { described_class.new(nil, token: token, action: :sign_up) }
+
+    it 'returns the unconfirmed message' do
+      allow(resource_owner).to receive(:confirmed?).and_return(false)
+
+      expect(token_response.body[:confirmable]).to eq(
+        confirmed: false,
+        message: I18n.t('devise.api.error_response.registerable.signed_up_but_unconfirmed')
+      )
+    end
+  end
+
+  context 'sign up with a non confirmable resource owner' do
+    let(:resource_owner) do
+      FactoryBot.build(
+        :admin_user,
+        id: 1,
+        email: 'test@development.com',
+        created_at: Time.now,
+        updated_at: Time.now
+      )
+    end
+    let(:token_response) { described_class.new(nil, token: token, action: :sign_up) }
+
+    it 'returns the default body without confirmable info' do
+      expect(token_response.body).to eq({
+                                          token: 'access_token',
+                                          refresh_token: 'refresh_token',
+                                          expires_in: 3600,
+                                          token_type: 'Bearer',
+                                          resource_owner: {
+                                            id: 1,
+                                            email: 'test@development.com',
+                                            created_at: resource_owner.created_at,
+                                            updated_at: resource_owner.updated_at
+                                          }.stringify_keys
+                                        })
+    end
+  end
+
+  context 'when refresh tokens are disabled' do
+    let(:token_response) { described_class.new(nil, token: token, action: :sign_in) }
+
+    it 'does not return a refresh token' do
+      allow(Devise.api.config.refresh_token).to receive(:enabled).and_return(false)
+
+      expect(token_response.body).to eq({
+                                          token: 'access_token',
+                                          expires_in: 3600,
+                                          token_type: 'Bearer',
+                                          resource_owner: {
+                                            id: 1,
+                                            email: 'test@development.com',
+                                            created_at: resource_owner.created_at,
+                                            updated_at: resource_owner.updated_at
+                                          }.stringify_keys
+                                        })
+    end
+  end
+
+  context 'when sign up extra fields are configured' do
+    let(:resource_owner) do
+      FactoryBot.build(
+        :user,
+        id: 1,
+        email: 'test@development.com',
+        name: 'John Doe',
+        created_at: Time.now,
+        updated_at: Time.now
+      )
+    end
+    let(:token_response) { described_class.new(nil, token: token, action: :sign_in) }
+
+    it 'returns the extra fields on the resource owner' do
+      allow(Devise.api.config.sign_up).to receive(:extra_fields).and_return([:name])
+
+      expect(token_response.body[:resource_owner]).to eq({
+        id: 1,
+        email: 'test@development.com',
+        created_at: resource_owner.created_at,
+        updated_at: resource_owner.updated_at,
+        name: 'John Doe'
+      }.stringify_keys)
+    end
+  end
+
   context 'info' do
     let(:token_response) { described_class.new(nil, token: token, action: :info) }
 

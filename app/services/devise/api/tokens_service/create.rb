@@ -17,11 +17,6 @@ module Devise
 
         private
 
-        def authenticate_service
-          Devise::Api::ResourceOwnerService::Authenticate.new(params: params,
-                                                              resource_class: resource_class).call
-        end
-
         def create_devise_api_token
           devise_api_token = resource_owner.access_tokens.new(params)
 
