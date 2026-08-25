@@ -135,7 +135,7 @@ lib/devise/api/
   generators/install_generator.rb     # rails g devise_api:install
   generators/templates/migration.rb.erb
 config/locales/en.yml                 # all user-facing strings (devise.api.error_response.*)
-spec/dummy/                           # full Rails 7 host app used by the test suite
+spec/dummy/                           # full Rails 8 host app used by the test suite
 ```
 
 ## Dependency notes

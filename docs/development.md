@@ -35,7 +35,7 @@ Style highlights (`.rubocop.yml`): target Ruby 2.7, single quotes, 120-char line
 
 ## CI
 
-Two workflows on every push, matrix over Ruby 2.7.7 / 3.0.5 / 3.1.3 / 3.2.0:
+Two workflows on every push, matrix over Ruby 3.2 / 3.3 / 3.4 / 4.0 (the development `Gemfile.lock` resolves to Rails 8.x, which needs Ruby >= 3.2; the gemspec still allows Ruby >= 2.7 for host apps):
 
 - `test.yml` — `bundle install` + `bundle exec rake rspec`
 - `rubocop.yml` — `bundle exec rubocop --config .rubocop.yml --parallel`
