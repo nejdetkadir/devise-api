@@ -10,7 +10,7 @@ bundle exec rspec spec/requests/tokens_spec.rb:95       # one example/context by
 bundle exec rspec --only-failures                       # uses .rspec_status
 ```
 
-CI (`.github/workflows/test.yml`, `rubocop.yml`) runs on push across Ruby 2.7 / 3.0 / 3.1 / 3.2.
+CI (`.github/workflows/test.yml`, `rubocop.yml`) runs on push across Ruby 3.2 / 3.3 / 3.4 / 4.0.
 
 ## Coverage
 
@@ -23,7 +23,7 @@ enforced. `lib/devise/api/version.rb` is filtered because the gemspec loads it b
 
 ## How the suite is wired
 
-- `spec/spec_helper.rb` sets `RAILS_ENV=test`, starts SimpleCov, requires the gem, then boots the **dummy Rails app** at `spec/dummy` (`require 'dummy/config/environment'`) — a real Rails 7 app with sqlite3 whose `User` model enables `database_authenticatable, registerable, recoverable, rememberable, validatable, confirmable, lockable, trackable, :api` (schema: `spec/dummy/db/schema.rb`). A second bare model, `AdminUser` (`database_authenticatable, registerable, validatable, :api` only), exists to exercise the "optional Devise module not enabled" branches (non-trackable sign-in, error/token responses without `lockable`/`confirmable` info); it has its own `devise_for :admin_users` routes.
+- `spec/spec_helper.rb` sets `RAILS_ENV=test`, starts SimpleCov, requires the gem, then boots the **dummy Rails app** at `spec/dummy` (`require 'dummy/config/environment'`) — a real Rails 8 app with sqlite3 whose `User` model enables `database_authenticatable, registerable, recoverable, rememberable, validatable, confirmable, lockable, trackable, :api` (schema: `spec/dummy/db/schema.rb`). A second bare model, `AdminUser` (`database_authenticatable, registerable, validatable, :api` only), exists to exercise the "optional Devise module not enabled" branches (non-trackable sign-in, error/token responses without `lockable`/`confirmable` info); it has its own `devise_for :admin_users` routes.
 - `DatabaseCleaner` wraps every example; spec types are inferred from file location; monkey-patching is disabled (`RSpec.describe` only).
 - `spec/supports/` is auto-required: FactoryBot setup, ActiveRecord config, and two request-spec helpers:
   - `authentication_headers_for(owner, token = nil, token_type = :access_token)` → `{ Authorization: "Bearer …" }` (creates a token via FactoryBot when none given; pass `:refresh_token` to authenticate refresh calls)

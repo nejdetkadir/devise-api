@@ -25,10 +25,10 @@ gem 'pry', '~> 0.14.1'
 gem 'sprockets-rails'
 
 # Use sqlite3 as the database for Active Record
-gem 'sqlite3', '~> 1.4'
+gem 'sqlite3', '~> 2.0'
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem 'puma', '~> 5.0'
+gem 'puma', '~> 7.0', '>= 7.2.1'
 
 # A library for setting up Ruby objects as test data [https://github.com/thoughtbot/factory_bot]
 gem 'factory_bot', '~> 6.2', '>= 6.2.1'
@@ -40,7 +40,7 @@ gem 'faker', '~> 3.1'
 gem 'database_cleaner', '~> 2.0', '>= 2.0.1'
 
 # RSpec for Rails 5+ [https://github.com/rspec/rspec-rails]
-gem 'rspec-rails', '~> 6.0', '>= 6.0.1'
+gem 'rspec-rails', '~> 8.0'
 
 # RSpec runner and formatters [https://github.com/rspec/rspec-core]
 gem 'rspec-core'
@@ -50,3 +50,6 @@ gem 'rspec-support'
 
 # Code coverage analysis tool for Ruby [https://github.com/simplecov-ruby/simplecov]
 gem 'simplecov', '~> 0.22', require: false
+
+# OpenStruct implementation, no longer a default gem since Ruby 3.5 [https://github.com/ruby/ostruct]
+gem 'ostruct'
