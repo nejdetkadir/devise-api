@@ -188,6 +188,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
         expect(parsed_body.lockable).to be_present
         expect(parsed_body.lockable.locked).to eq true
         expect(parsed_body.lockable.max_attempts).to eq Devise.maximum_attempts
+        expect(parsed_body.lockable.failed_attempts).to eq user.reload.failed_attempts
         expect(parsed_body.lockable.failed_attemps).to be_present
         expect(parsed_body.lockable.locked_at.to_date).to eq user.locked_at.to_date
       end
@@ -251,6 +252,7 @@ RSpec.describe Devise::Api::TokensController, type: :request do
         expect(parsed_body.lockable).to be_present
         expect(parsed_body.lockable.locked).to eq false
         expect(parsed_body.lockable.max_attempts).to eq Devise.maximum_attempts
+        expect(parsed_body.lockable.failed_attempts).to eq 1
         expect(parsed_body.lockable.failed_attemps).to eq 1
       end
 
@@ -493,13 +495,13 @@ RSpec.describe Devise::Api::TokensController, type: :request do
                                        as: :json
       end
 
-      it 'returns http unauthorized' do
-        expect(response).to have_http_status(:unauthorized)
+      it 'returns http bad request' do
+        expect(response).to have_http_status(:bad_request)
       end
 
       it 'returns an error response' do
-        expect(parsed_body.error).to eq 'invalid_token'
-        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.invalid_token')])
+        expect(parsed_body.error).to eq 'invalid_refresh_token'
+        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.invalid_refresh_token')])
       end
 
       it 'does not refresh the token' do
@@ -515,13 +517,13 @@ RSpec.describe Devise::Api::TokensController, type: :request do
         post refresh_user_tokens_path(access_token: devise_api_token.refresh_token), as: :json
       end
 
-      it 'returns http unauthorized' do
-        expect(response).to have_http_status(:unauthorized)
+      it 'returns http bad request' do
+        expect(response).to have_http_status(:bad_request)
       end
 
       it 'returns an error response' do
-        expect(parsed_body.error).to eq 'invalid_token'
-        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.invalid_token')])
+        expect(parsed_body.error).to eq 'invalid_refresh_token'
+        expect(parsed_body.error_description).to eq([I18n.t('devise.api.error_response.invalid_refresh_token')])
       end
 
       it 'does not refresh the token' do

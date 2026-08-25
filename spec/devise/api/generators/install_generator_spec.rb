@@ -37,6 +37,13 @@ RSpec.describe Devise::Api::Generators::InstallGenerator do
       it 'creates the devise api tokens table' do
         expect(File.read(migration_paths.first)).to include('create_table :devise_api_tokens')
       end
+
+      it 'adds unique indexes for the token secrets' do
+        migration = File.read(migration_paths.first)
+
+        expect(migration).to include('t.string :access_token, null: false, index: { unique: true }')
+        expect(migration).to include('t.string :refresh_token, null: true, index: { unique: true }')
+      end
     end
 
     context 'locale file' do

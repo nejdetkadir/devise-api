@@ -12,6 +12,8 @@ All endpoints are drawn by `devise_for :<scope>` for any model with the `:api` m
 
 Tokens are sent per `authorization` config (default `:both`): `Authorization: Bearer <token>` header **or** `access_token` query/body param (params win over header). The **same extraction** is used for access and refresh tokens — `refresh` expects the *refresh* token in the same slot.
 
+With `refresh_token.rotation_enabled` (default off), a successful `refresh` also revokes the presented refresh token, and presenting a rotated/revoked refresh token again revokes its whole token family and returns `revoked_token` (reuse detection).
+
 ## Success payloads
 
 Built by `Devise::Api::Responses::TokenResponse` (`lib/devise/api/responses/token_response.rb`).
@@ -48,13 +50,14 @@ Built by `Devise::Api::Responses::ErrorResponse` (`lib/devise/api/responses/erro
 {
   "error": "<error_type>",
   "error_description": ["human readable message(s)"],
-  "lockable":   { "locked": true, "max_attempts": 5, "failed_attemps": 5, "locked_at": "...", "unlock_at": "..." },
+  "lockable":   { "locked": true, "max_attempts": 5, "failed_attempts": 5, "failed_attemps": 5, "locked_at": "...", "unlock_at": "..." },
   "confirmable": { "confirmed": false, "confirmation_sent_at": "..." }
 }
 ```
 
-- `lockable` / `confirmable` blocks appear **only** for `invalid_authentication` errors on models with those Devise modules (`compact` removes them otherwise). Note the `failed_attemps` key is a shipped typo — treat as public API until a deliberate breaking change (see [analysis/known-issues.md](analysis/known-issues.md)).
-- `error_description` comes from `record.errors.full_messages` when a record with validation errors is attached; otherwise from `config/locales/en.yml` under `devise.api.error_response.<error>`.
+- `lockable` / `confirmable` blocks appear **only** for `invalid_authentication` errors on models with those Devise modules (`compact` removes them otherwise), and only while `error_response.verbose_account_state` is `true` (the default) and `paranoid` is `false` — see [configuration.md](configuration.md).
+- `failed_attempts` is the canonical key; `failed_attemps` is the original shipped typo, kept for backward compatibility until the next major release (see [analysis/known-issues.md](analysis/known-issues.md)).
+- `error_description` comes from `record.errors.full_messages` when a record with validation errors is attached; otherwise from `config/locales/en.yml` under `devise.api.error_response.<error>`. With `paranoid` enabled, `invalid_authentication` always uses the generic message (no locked/unconfirmed specialization).
 
 ## Error catalog
 
@@ -62,13 +65,14 @@ Source of truth: `ErrorResponse::ERROR_TYPES` + `#status`. Every symbol must hav
 
 | `error` | HTTP status | Raised by / when |
 |---|---|---|
-| `invalid_authentication` | 401 | `Authenticate` — bad password, locked, or unconfirmed account (description specializes per module state) |
-| `invalid_token` | 401 | helpers `authenticate_devise_api_token!` (no/unknown access token); `refresh` when refresh token unknown |
+| `invalid_authentication` | 401 | `Authenticate` — bad password, locked, or unconfirmed account (description specializes per module state unless `paranoid`); with `paranoid` enabled, also returned when no account matches |
+| `invalid_token` | 401 | helpers `authenticate_devise_api_token!` (no/unknown access token) |
 | `expired_token` | 401 | helpers — access token past `expires_in` |
 | `expired_refresh_token` | 401 | `TokensService::Refresh` — refresh token past `refresh_token.expires_in` |
-| `revoked_token` | 401 | helpers / `refresh` — token has `revoked_at` |
-| `invalid_email` | 400 | `Authenticate` — no resource found for the given authentication keys |
-| `invalid_refresh_token` | 400 | (declared; mapped to 400) |
+| `revoked_token` | 401 | helpers / `refresh` — token has `revoked_at`; also the reuse-detection response when `refresh_token.rotation_enabled` revokes a token family |
+| `invalid_email` | 400 | `Authenticate` — no resource found and `:email` is one of the model's `authentication_keys` (and `paranoid` is off) |
+| `invalid_login` | 400 | `Authenticate` — no resource found and the model authenticates by non-email keys (and `paranoid` is off) |
+| `invalid_refresh_token` | 400 | `refresh` action — no/unknown refresh token presented |
 | `refresh_token_disabled` | 400 | `refresh` action when `refresh_token.enabled` is false |
 | `sign_up_disabled` | 400 | `sign_up` action when `sign_up.enabled` is false |
 | `invalid_resource_owner` | 400 | `TokensService::Create` — owner doesn't respond to `access_tokens` (model lacks `:api`) |

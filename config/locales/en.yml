@@ -11,6 +11,7 @@ en:
         sign_up_disabled: "Sign up is disabled for this application"
         invalid_refresh_token: "Refresh token is invalid"
         invalid_email: "Email is invalid"
+        invalid_login: "Login credentials are invalid"
         invalid_resource_owner: "Resource owner is invalid"
         resource_owner_create_error: "Resource owner could not be created"
         devise_api_token_create_error: "Token could not be created"

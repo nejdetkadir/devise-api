@@ -90,10 +90,15 @@ Devise.setup do |config|
     api.refresh_token.expires_in = 1.week
     api.refresh_token.generator = ->(_resource_owner) { Devise.friendly_token(60) }
     api.refresh_token.expires_in_infinite = ->(_resource_owner) { false }
+    api.refresh_token.rotation_enabled = false # when true, each refresh revokes the presented refresh token and a replayed one revokes the whole token family (recommended)
 
     # Sign up
     api.sign_up.enabled = true
-    api.sign_up.extra_fields = []
+    api.sign_up.extra_fields = [] # WARNING: listed fields are writable at sign up AND echoed in token/info responses - never list privileged fields like :role or :admin
+
+    # Error responses
+    api.error_response.verbose_account_state = true # when false, lockable/confirmable details are omitted from error responses
+    api.paranoid = false # when true, unknown accounts and wrong passwords return the same generic invalid_authentication error (prevents account enumeration)
 
     # Authorization
     api.authorization.key = 'Authorization'
@@ -125,7 +130,7 @@ end
 
 ## Routes
 
-You can configure the tokens routes with the orginally `devise_for` method. For example:
+You can configure the tokens routes with the original `devise_for` method. For example:
 ```ruby
 # config/routes.rb
 Rails.application.routes.draw do
@@ -223,7 +228,7 @@ class Api::V1::TokensController < YourBaseController
   skip_before_action :verify_authenticity_token, raise: false
 
   def create
-    service = Devise::Api::TokensService::V2::Create.call(params: params, resource_class: Customer || resource_class)
+    service = Devise::Api::TokensService::V2::Create.new(params: params, resource_class: Customer).call
     if service.success?
       render json: service.success, status: :created
     else
@@ -273,9 +278,18 @@ curl --location --request GET 'http://127.0.0.1:3000/users/tokens/info' \
 --header 'Authorization: Bearer <access_token>'
 ```
 
+## Security recommendations
+
+- **Send tokens in the `Authorization` header.** The default `authorization.location = :both` also accepts tokens as query/body params (e.g. `GET /users/tokens/info?access_token=...`), and URLs end up in server/proxy logs, browser history and `Referer` headers. Set `api.authorization.location = :header` unless you need params support.
+- **Enable refresh token rotation** (`api.refresh_token.rotation_enabled = true`). Without it a refresh token stays valid until it expires, so a stolen one can be replayed. With rotation, every refresh revokes the presented token and replaying a rotated token revokes the whole token family.
+- **Enable paranoid mode** (`api.paranoid = true`) if you don't want attackers to be able to check whether an email address has an account (account enumeration).
+- **Rate limit the token endpoints.** The gem does not throttle `sign_in`/`sign_up`/`refresh`; use [rack-attack](https://github.com/rack/rack-attack) or an equivalent in front of them. Devise `lockable` (if enabled) only slows per-account brute force.
+- **Be careful with `sign_up.extra_fields`.** Every listed field is mass-assignable at sign up and echoed in every token/info response.
+- **Token secrets in logs.** The gem automatically adds `access_token`, `refresh_token` and `previous_refresh_token` to `filter_parameters` and filters them from the token model's `#inspect`, but raw SQL logging (e.g. `log_level = :debug` in production) can still print token values — keep production SQL logging off or filtered.
+
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake rspec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `bundle exec rake rspec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 

@@ -9,9 +9,9 @@ module Devise
 
         def call
           return Failure(error: :expired_refresh_token) if devise_api_token.refresh_token_expired?
+          return create_devise_api_token unless Devise.api.config.refresh_token.rotation_enabled
 
-          devise_api_token = yield create_devise_api_token
-          Success(devise_api_token)
+          create_devise_api_token_with_rotation
         end
 
         private
@@ -19,6 +19,21 @@ module Devise
         def create_devise_api_token
           Devise::Api::TokensService::Create.new(resource_owner: resource_owner,
                                                  previous_refresh_token: devise_api_token.refresh_token).call
+        end
+
+        # Mints the replacement token and revokes the presented refresh token atomically, so a
+        # rotated refresh token can never be replayed (its reuse triggers family revocation upstream)
+        def create_devise_api_token_with_rotation
+          result = nil
+
+          devise_api_token.class.transaction do
+            result = create_devise_api_token
+            raise ::ActiveRecord::Rollback if result.failure?
+
+            devise_api_token.revoke!
+          end
+
+          result
         end
       end
     end

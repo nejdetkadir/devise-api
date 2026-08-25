@@ -54,5 +54,44 @@ RSpec.describe Devise::Api::TokensService::Refresh do
         expect(result.failure[:error]).to eq(:devise_api_token_create_error)
       end
     end
+
+    context 'when rotation is enabled' do
+      around do |example|
+        original = Devise.api.config.refresh_token.rotation_enabled
+        Devise.api.config.refresh_token.rotation_enabled = true
+        example.run
+      ensure
+        Devise.api.config.refresh_token.rotation_enabled = original
+      end
+
+      context 'and the refresh token is valid' do
+        let(:devise_api_token) { create(:devise_api_token) }
+
+        it 'returns a success with a new token' do
+          expect(result).to be_success
+          expect(result.success.previous_refresh_token).to eq(devise_api_token.refresh_token)
+        end
+
+        it 'revokes the presented token' do
+          result
+
+          expect(devise_api_token.reload.revoked?).to eq true
+        end
+      end
+
+      context 'and the token creation fails' do
+        let(:devise_api_token) { create(:devise_api_token) }
+
+        before do
+          allow(Devise.api.config.access_token).to receive(:expires_in).and_return(nil)
+        end
+
+        it 'returns a failure and keeps the presented token unrevoked' do
+          expect(result).to be_failure
+          expect(result.failure[:error]).to eq(:devise_api_token_create_error)
+          expect(devise_api_token.reload.revoked?).to eq false
+        end
+      end
+    end
   end
 end

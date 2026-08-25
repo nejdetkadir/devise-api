@@ -40,11 +40,27 @@ RSpec.describe Devise::Api::Configuration do
         expect(config.refresh_token.expires_in_infinite.call).to eq false
       end
 
+      it 'rotation_enabled is false' do
+        expect(config.refresh_token.rotation_enabled).to eq false
+      end
+
       it 'generator returns a token string with using Devise.friendly_token' do
         allow(Devise).to receive(:friendly_token).with(60).and_return('token')
         expect(config.refresh_token.generator.call).to eq 'token'
         expect(Devise).to have_received(:friendly_token).with(60)
         expect(config.refresh_token.generator).to be_a Proc
+      end
+    end
+
+    context 'error_response' do
+      it 'verbose_account_state is true' do
+        expect(config.error_response.verbose_account_state).to eq true
+      end
+    end
+
+    context 'paranoid' do
+      it 'is false' do
+        expect(config.paranoid).to eq false
       end
     end
 
@@ -131,6 +147,9 @@ RSpec.describe Devise::Api::Configuration do
       config.config.sign_up.enabled = false
       config.config.sign_up.extra_fields = [:name]
       config.config.authorization.location = :header
+      config.config.refresh_token.rotation_enabled = true
+      config.config.error_response.verbose_account_state = false
+      config.config.paranoid = true
     end
 
     it 'reflects the overridden values' do
@@ -140,6 +159,9 @@ RSpec.describe Devise::Api::Configuration do
       expect(config.sign_up.enabled).to eq false
       expect(config.sign_up.extra_fields).to eq [:name]
       expect(config.authorization.location).to eq :header
+      expect(config.refresh_token.rotation_enabled).to eq true
+      expect(config.error_response.verbose_account_state).to eq false
+      expect(config.paranoid).to eq true
     end
 
     it 'does not affect other instances' do
@@ -149,6 +171,9 @@ RSpec.describe Devise::Api::Configuration do
       expect(other_config.refresh_token.enabled).to eq true
       expect(other_config.sign_up.enabled).to eq true
       expect(other_config.authorization.location).to eq :both
+      expect(other_config.refresh_token.rotation_enabled).to eq false
+      expect(other_config.error_response.verbose_account_state).to eq true
+      expect(other_config.paranoid).to eq false
     end
   end
 end

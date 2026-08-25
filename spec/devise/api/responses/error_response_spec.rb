@@ -14,6 +14,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         sign_up_disabled
         invalid_refresh_token
         invalid_email
+        invalid_login
         invalid_resource_owner
         resource_owner_create_error
         devise_api_token_create_error
@@ -31,6 +32,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
       expect(described_class.new(nil, error: :sign_up_disabled)).to respond_to(:sign_up_disabled_error?)
       expect(described_class.new(nil, error: :invalid_refresh_token)).to respond_to(:invalid_refresh_token_error?)
       expect(described_class.new(nil, error: :invalid_email)).to respond_to(:invalid_email_error?)
+      expect(described_class.new(nil, error: :invalid_login)).to respond_to(:invalid_login_error?)
       expect(described_class.new(nil, error: :invalid_resource_owner)).to respond_to(:invalid_resource_owner_error?)
       expect(described_class.new(nil, error: :resource_owner_create_error)).to respond_to(:resource_owner_create_error?)
       expect(described_class.new(nil,
@@ -203,6 +205,27 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
     end
   end
 
+  context 'invalid login error response' do
+    let(:error_response) { described_class.new(nil, error: :invalid_login) }
+
+    it 'has a status of 400' do
+      expect(error_response.status).to eq :bad_request
+    end
+
+    it 'has a body with an error and error description' do
+      allow(I18n).to receive(:t)
+        .with('devise.api.error_response.invalid_login')
+        .and_return('Invalid login')
+
+      expect(error_response.body).to eq(
+        error: :invalid_login,
+        error_description: ['Invalid login']
+      )
+
+      expect(I18n).to have_received(:t).with('devise.api.error_response.invalid_login')
+    end
+  end
+
   context 'invalid resource owner error response' do
     let(:error_response) { described_class.new(nil, error: :invalid_resource_owner) }
 
@@ -326,6 +349,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         lockable: {
           locked: false,
           max_attempts: ::Devise.maximum_attempts,
+          failed_attempts: 0,
           failed_attemps: 0
         }
       )
@@ -351,6 +375,7 @@ RSpec.describe Devise::Api::Responses::ErrorResponse do
         lockable: {
           locked: true,
           max_attempts: ::Devise.maximum_attempts,
+          failed_attempts: record.failed_attempts,
           failed_attemps: record.failed_attempts,
           locked_at: record.locked_at,
           unlock_at: record.locked_at + ::Devise.unlock_in

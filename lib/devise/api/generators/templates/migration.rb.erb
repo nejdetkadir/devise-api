@@ -7,8 +7,8 @@ class CreateDeviseApiTables < ActiveRecord::Migration<%= migration_version %>
 
     create_table :devise_api_tokens, id: primary_key_type  do |t|
       t.belongs_to :resource_owner, null: false, polymorphic: true, index: true, type: foreign_key_type
-      t.string :access_token, null: false, index: true
-      t.string :refresh_token, null: true, index: true
+      t.string :access_token, null: false, index: { unique: true }
+      t.string :refresh_token, null: true, index: { unique: true }
       t.integer :expires_in, null: false
       t.datetime :revoked_at, null: true
       t.string :previous_refresh_token, null: true, index: true

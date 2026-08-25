@@ -9,7 +9,7 @@ module Devise
         def call
           return Success(devise_api_token) if devise_api_token.blank?
           return Success(devise_api_token) if devise_api_token.revoked? || devise_api_token.expired?
-          return Success(devise_api_token) if devise_api_token.update(revoked_at: Time.zone.now)
+          return Success(devise_api_token) if devise_api_token.update(revoked_at: Time.current)
 
           Failure(error: :devise_api_token_revoke_error, record: devise_api_token)
         end

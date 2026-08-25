@@ -18,7 +18,7 @@ bundle exec rubocop              # lint only (or: bundle exec rubocop -a for saf
 bundle exec rubocop --config .rubocop.yml --parallel   # exactly what CI runs
 ```
 
-Style highlights (`.rubocop.yml`): target Ruby 2.7, single quotes, 120-char lines, `Style/Documentation` off, method/ABC limits at 30 (the controller already carries targeted `rubocop:disable` comments for `Metrics/AbcSize` — prefer refactoring over adding more disables).
+Style highlights (`.rubocop.yml`): target Ruby 2.7, single quotes, 120-char lines, `Style/Documentation` off, method/ABC limits at 30. The codebase currently has no `rubocop:disable` comments — prefer refactoring (extracted helpers, constants) over adding them.
 
 ## Repo conventions
 
@@ -32,7 +32,6 @@ Style highlights (`.rubocop.yml`): target Ruby 2.7, single quotes, 120-char line
 - Version constant: `lib/devise/api/version.rb` (currently `0.2.0`). SemVer intent; still pre-1.0 so minor bumps may break.
 - `CHANGELOG.md` exists but has not been maintained past the initial release — update it as part of any release work.
 - Release flow (maintainer): bump `version.rb` → update CHANGELOG → `bundle exec rake release` (tags, pushes, publishes to rubygems.org). Gem files are `git ls-files` minus `bin|test|spec|features` (see gemspec) — nothing in `spec/dummy` ships.
-- `sig/devise/api.rbs` is a stub — RBS is not actually maintained.
 
 ## CI
 

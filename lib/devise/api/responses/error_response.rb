@@ -15,11 +15,21 @@ module Devise
           sign_up_disabled
           invalid_refresh_token
           invalid_email
+          invalid_login
           invalid_resource_owner
           resource_owner_create_error
           devise_api_token_create_error
           devise_api_token_revoke_error
           invalid_authentication
+        ].freeze
+
+        UNAUTHORIZED_ERRORS = %i[
+          invalid_token expired_token expired_refresh_token revoked_token invalid_authentication
+        ].freeze
+
+        BAD_REQUEST_ERRORS = %i[
+          invalid_email invalid_login invalid_refresh_token refresh_token_disabled sign_up_disabled
+          invalid_resource_owner
         ].freeze
 
         ERROR_TYPES.each do |error_type|
@@ -55,33 +65,34 @@ module Devise
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         def error_description
           return [I18n.t("devise.api.error_response.#{error}")] if record.blank?
-          if invalid_authentication_error? && devise_lockable_info.present? && record.access_locked?
-            return [I18n.t('devise.api.error_response.lockable.locked')]
-          end
-          if invalid_authentication_error? && devise_confirmable_info.present? && !record.confirmed?
-            return [I18n.t('devise.api.error_response.confirmable.unconfirmed')]
-          end
-          return [I18n.t('devise.api.error_response.invalid_authentication')] if invalid_authentication_error?
+          return invalid_authentication_description if invalid_authentication_error?
 
           record.errors.full_messages
         end
-        # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+        def invalid_authentication_description
+          unless Devise.api.config.paranoid
+            return [I18n.t('devise.api.error_response.lockable.locked')] if lockable_record? && record.access_locked?
+            if confirmable_record? && !record.confirmed?
+              return [I18n.t('devise.api.error_response.confirmable.unconfirmed')]
+            end
+          end
+
+          [I18n.t('devise.api.error_response.invalid_authentication')]
+        end
 
         def devise_lockable_info
-          unless resource_class.present? &&
-                 resource_class.supported_devise_modules.lockable? &&
-                 invalid_authentication_error?
-            return nil
-          end
+          return nil unless verbose_account_state? && lockable_record? && invalid_authentication_error?
 
           unlock_at = record.access_locked? ? record.locked_at + ::Devise.unlock_in : nil
 
           {
             locked: record.access_locked?,
             max_attempts: ::Devise.maximum_attempts,
+            failed_attempts: record.failed_attempts,
+            # Deprecated misspelling kept for backward compatibility; will be removed in the next major release
             failed_attemps: record.failed_attempts,
             locked_at: record.locked_at,
             unlock_at: unlock_at
@@ -89,11 +100,7 @@ module Devise
         end
 
         def devise_confirmable_info
-          unless resource_class.present? &&
-                 resource_class.supported_devise_modules.confirmable? &&
-                 invalid_authentication_error?
-            return nil
-          end
+          return nil unless verbose_account_state? && confirmable_record? && invalid_authentication_error?
 
           {
             confirmed: record.confirmed?,
@@ -101,20 +108,24 @@ module Devise
           }.compact
         end
 
+        def lockable_record?
+          record.present? && resource_class.present? && resource_class.supported_devise_modules.lockable?
+        end
+
+        def confirmable_record?
+          record.present? && resource_class.present? && resource_class.supported_devise_modules.confirmable?
+        end
+
+        def verbose_account_state?
+          !Devise.api.config.paranoid && Devise.api.config.error_response.verbose_account_state
+        end
+
         def unauthorized_status?
-          invalid_token_error? ||
-            expired_token_error? ||
-            expired_refresh_token_error? ||
-            revoked_token_error? ||
-            invalid_authentication_error?
+          UNAUTHORIZED_ERRORS.include?(error)
         end
 
         def bad_request_status?
-          invalid_email_error? ||
-            invalid_refresh_token_error? ||
-            refresh_token_disabled_error? ||
-            sign_up_disabled_error? ||
-            invalid_resource_owner_error?
+          BAD_REQUEST_ERRORS.include?(error)
         end
       end
     end
